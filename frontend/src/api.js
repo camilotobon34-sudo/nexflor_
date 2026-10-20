@@ -1,8 +1,19 @@
 import { useEffect, useState } from "react";
 
+export const WORKER_KEY = "trigal-worker";
+
+export function workerToken() {
+  return sessionStorage.getItem(WORKER_KEY) || "";
+}
+
 export async function api(path, options = {}) {
+  const worker = workerToken();
   const response = await fetch(`/api${path}`, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    headers: {
+      "Content-Type": "application/json",
+      ...(worker ? { Authorization: `Bearer ${worker}` } : {}),
+      ...(options.headers || {}),
+    },
     ...options,
   });
   const body = await response.json().catch(() => ({}));

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useApi } from "../api.js";
 import { Status } from "../components/Shell.jsx";
 
-const filters = ["Todos", "Seguridad", "Taller", "Atención"];
+const filters = ["Todos", "Cultivo", "Campo", "Cosecha", "Poscosecha", "Seguridad"];
 
 export default function Courses() {
   const { loading, error, data } = useApi("/courses");
@@ -24,9 +24,9 @@ export default function Courses() {
       <section className="page">
         <div className="page-head">
           <div>
-            <p className="eyebrow">Recorridos del taller</p>
-            <h1>Aprender para trabajar seguros</h1>
-            <p className="lede">Seis cursos cortos. Se hacen entre pedido y pedido, no en un salón aparte.</p>
+            <p className="eyebrow">Recorrido del cultivo</p>
+            <h1>De la planta al despacho</h1>
+            <p className="lede">Seis cursos, en el orden del trabajo en El Trigal: reconocer la flor, sembrarla, cuidarla, cosecharla, hidratarla y cuidarte.</p>
           </div>
           <Link className="button" to="/practica/preparacion-segura">Ir a la práctica</Link>
         </div>

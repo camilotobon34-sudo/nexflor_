@@ -1,13 +1,16 @@
 import express from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 import * as store from "./store.js";
-import { createStaff, ensureAdmin, ensureStaff, listStaff, loginAdmin, setStaffActive, verifySession } from "./auth.js";
+import { ensureAdmin, loginAdmin, loginWorker, registerWorker, readSession, verifyAdmin } from "./auth.js";
 import * as admin from "./admin.js";
 import * as face from "./faceStore.js";
 import { analyzeFrames, engineStatus, startEngine } from "./faceEngine.js";
 
 const app = express();
 const port = process.env.PORT || 4000;
+const frontendDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../frontend/dist");
 
 ensureAdmin();
 ensureStaff();
@@ -18,28 +21,39 @@ app.use(cors());
 app.use(express.json({ limit: "6mb" }));
 app.use("/api/uploads", express.static(admin.uploadsDir));
 
-function readSession(req) {
-  const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "").trim();
-  return verifySession(token);
+function tokenOf(req) {
+  return String(req.headers.authorization || "").replace(/^Bearer\s+/i, "").trim();
 }
 
 function requireAdmin(req, res, next) {
-  const session = readSession(req);
-  if (session?.role !== "admin") return res.status(401).json({ message: "Entra como administrador." });
-  req.session = session;
+  if (!verifyAdmin(tokenOf(req))) return res.status(401).json({ message: "Entra como administrador." });
   next();
 }
 
-function requireStaff(req, res, next) {
-  const session = readSession(req);
-  if (!session) return res.status(401).json({ message: "Entra con una cuenta autorizada para escanear." });
-  req.session = session;
-  next();
+function workerId(req) {
+  const session = readSession(tokenOf(req));
+  return session?.role === "worker" ? session.id : null;
 }
 
 app.post("/api/admin/login", (req, res) => {
   try {
     res.json(loginAdmin(String(req.body?.username || "").trim(), String(req.body?.password || "")));
+  } catch (error) {
+    res.status(error.status || 500).json({ message: error.message || "No se pudo entrar." });
+  }
+});
+
+app.post("/api/workers/register", (req, res) => {
+  try {
+    res.status(201).json(registerWorker(req.body?.name, req.body?.password, req.body?.shift));
+  } catch (error) {
+    res.status(error.status || 400).json({ message: error.message || "No se pudo crear la cuenta." });
+  }
+});
+
+app.post("/api/workers/login", (req, res) => {
+  try {
+    res.json(loginWorker(String(req.body?.name || ""), String(req.body?.password || "")));
   } catch (error) {
     res.status(error.status || 500).json({ message: error.message || "No se pudo entrar." });
   }
@@ -172,96 +186,39 @@ app.get("/api/health", (_req, res) => {
   res.json(store.health());
 });
 
-function clientReading(body) {
-  const descriptor = body?.descriptor;
-  const valid = Array.isArray(descriptor)
-    && descriptor.length === 128
-    && descriptor.every((value) => typeof value === "number" && Number.isFinite(value));
-  return {
-    descriptor: valid ? descriptor : null,
-    liveness: body?.liveness === true,
-    quality: body?.quality === true && valid,
-    staticImage: body?.staticImage === true,
-  };
-}
-
-app.get("/api/face/status", requireStaff, (_req, res) => {
-  const status = engineStatus();
-  res.json({
-    ...face.summary(),
-    engine: status.ready ? "server" : "browser",
-    modelReady: status.ready,
-    notice: status.ready
-      ? status.message
-      : "TensorFlow nativo no está instalado en este servidor. El navegador mide el rostro y el servidor decide si entra. No es una garantía contra alguien que reenvíe una plantilla.",
-    consent: face.CONSENT_TEXT,
-  });
+app.get("/api/me", (req, res) => {
+  res.json(store.me(workerId(req)));
 });
 
-app.post("/api/face/verify", requireStaff, async (req, res, next) => {
-  try {
-    const status = engineStatus();
-    const reading = status.ready ? await analyzeFrames(req.body?.frames) : clientReading(req.body);
-    res.json(face.verifyFace(reading, req.session.username));
-  } catch (error) { next(error); }
+app.get("/api/dashboard", (req, res) => {
+  res.json(store.dashboard(workerId(req)));
 });
 
-app.post("/api/face/register", requireStaff, async (req, res, next) => {
-  try {
-    const status = engineStatus();
-    const reading = status.ready ? await analyzeFrames(req.body?.frames) : clientReading(req.body);
-    res.json(face.registerPerson({
-      fullName: req.body?.fullName,
-      documentId: req.body?.documentId,
-      role: req.body?.role,
-      email: req.body?.email,
-      consent: req.body?.consent,
-      descriptor: reading.descriptor,
-      liveness: reading.liveness,
-      quality: reading.quality,
-    }, req.session.username));
-  } catch (error) { next(error); }
-});
-
-app.post("/api/face/code", requireStaff, (req, res, next) => {
-  try {
-    res.json(face.verifyCode({ documentId: req.body?.documentId, pin: req.body?.pin }, req.session.username));
-  } catch (error) { next(error); }
-});
-
-app.get("/api/me", (_req, res) => {
-  res.json(store.me());
-});
-
-app.get("/api/dashboard", (_req, res) => {
-  res.json(store.dashboard());
-});
-
-app.get("/api/courses", (_req, res) => {
-  res.json(store.listCourses());
+app.get("/api/courses", (req, res) => {
+  res.json(store.listCourses(workerId(req)));
 });
 
 app.get("/api/courses/:id", (req, res) => {
-  const course = store.getCourse(req.params.id);
+  const course = store.getCourse(req.params.id, workerId(req));
   if (!course) return res.status(404).json({ message: "Ese curso no está en el taller." });
   res.json(course);
 });
 
 app.post("/api/courses/:id/lessons/:lessonId/complete", (req, res) => {
-  const course = store.toggleLesson(req.params.id, req.params.lessonId);
+  const course = store.toggleLesson(req.params.id, req.params.lessonId, workerId(req));
   if (!course) return res.status(404).json({ message: "No encontré esa lección." });
   res.json(course);
 });
 
 app.get("/api/courses/:id/quiz", (req, res) => {
-  const quiz = store.getQuiz(req.params.id);
+  const quiz = store.getQuiz(req.params.id, workerId(req));
   if (!quiz) return res.status(404).json({ message: "Ese curso no tiene práctica." });
   res.json(quiz);
 });
 
 app.post("/api/courses/:id/quiz", (req, res) => {
   try {
-    const result = store.submitQuiz(req.params.id, req.body?.answers);
+    const result = store.submitQuiz(req.params.id, req.body?.answers, workerId(req));
     if (!result) return res.status(404).json({ message: "Ese curso no tiene práctica." });
     res.json(result);
   } catch (error) {
@@ -273,12 +230,20 @@ app.get("/api/team", (_req, res) => {
   res.json(store.listTeam());
 });
 
-app.get("/api/progress", (_req, res) => {
-  res.json(store.progressReport());
+app.get("/api/progress", (req, res) => {
+  res.json(store.progressReport(workerId(req)));
 });
 
 app.use("/api", (_req, res) => {
   res.status(404).json({ message: "Esa ruta no existe." });
+});
+
+app.use(express.static(frontendDir));
+app.use((req, res, next) => {
+  if (req.method !== "GET" || req.path.startsWith("/api")) return next();
+  res.sendFile(path.join(frontendDir, "index.html"), (error) => {
+    if (error) next();
+  });
 });
 
 app.use((error, _req, res, _next) => {
