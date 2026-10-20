@@ -4,13 +4,28 @@ import { fileURLToPath } from "url";
 import { enrich } from "./teach.js";
 
 const file = path.join(path.dirname(fileURLToPath(import.meta.url)), "../data/db.json");
+let memory = null;
 
 function read() {
-  return JSON.parse(fs.readFileSync(file, "utf8"));
+  if (memory) return memory;
+  memory = JSON.parse(fs.readFileSync(file, "utf8"));
+  return memory;
 }
 
 function write(data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+  memory = data;
+  const tmp = `${file}.tmp`;
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(data, null, 2));
+    try {
+      fs.renameSync(tmp, file);
+    } catch {
+      fs.copyFileSync(tmp, file);
+      fs.unlinkSync(tmp);
+    }
+  } catch (error) {
+    if (!["EROFS", "EPERM", "EACCES", "ENOENT"].includes(error.code)) throw error;
+  }
 }
 
 export function readDb() {

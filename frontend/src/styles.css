@@ -497,7 +497,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   .main { padding: 16px 16px 96px; }
   .tabbar {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     position: fixed;
     left: 0; right: 0; bottom: 0;
     background: white;
@@ -513,4 +513,42 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   .player img { height: 220px; }
   .who div { display: none; }
   .toast { bottom: 84px; }
+  .face-layout, .split-lists { grid-template-columns: 1fr; }
+  .tabbar a { font-size: 10px; }
+  .face-actions, .staff-login { display: grid; }
+  .face-actions .button, .face-actions button, .staff-login .button { width: 100%; }
+  .face-page .chips { display: grid; grid-template-columns: 1fr 1fr; }
+  .face-page .chips button { width: 100%; }
 }
+
+.face-layout { display: grid; grid-template-columns: 1.4fr .8fr; gap: 16px; align-items: start; }
+.face-form { display: grid; gap: 10px; margin-top: 12px; }
+.face-form label, .consent { display: grid; gap: 6px; font-size: 14px; }
+.face-form input, .toolbar label input { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; }
+.consent { grid-template-columns: auto 1fr; align-items: start; margin: 12px 0; }
+.viewport { position: relative; min-height: 240px; border-radius: 18px; overflow: hidden; background: var(--green-deep); }
+.viewport video { width: 100%; height: min(62vh, 520px); min-height: 280px; object-fit: cover; display: block; transform: scaleX(-1); }
+.staff-login { display: grid; gap: 12px; max-width: 420px; }
+.staff-login input, .face-form input { font-size: 16px; min-height: 48px; }
+.face-actions .button, .face-page .chips button, .staff-login .button { min-height: 48px; font-size: 16px; }
+.page-head button { min-height: 44px; }
+.viewport p { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 16px; color: white; text-align: center; }
+.viewport.scanning { outline: 3px solid #d7b15a; }
+.scan-flag { position: absolute; left: 12px; bottom: 12px; background: var(--sand); color: var(--sand-ink); border-radius: 999px; padding: 6px 10px; font-size: 13px; }
+.face-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.face-result { padding: 12px 14px; border-radius: 12px; }
+.face-result.ok { background: var(--mint); color: var(--green-deep); }
+.face-result.bad { background: #fdecea; color: #8a2f24; }
+.muted { color: var(--muted); }
+.pill { display: inline-block; border-radius: 999px; padding: 3px 8px; font-size: 12px; background: var(--sand); color: var(--sand-ink); }
+.pill.autorizado, .pill.permitido { background: var(--mint); color: var(--green-deep); }
+.pill.pendiente { background: var(--sand); color: var(--sand-ink); }
+.pill.rechazado, .pill.denegado, .pill.suspendido { background: #fdecea; color: #8a2f24; }
+.split-lists { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.split-lists ul, .face-admin ul { list-style: none; padding: 0; margin: 0; }
+.split-lists li, .face-admin .admin-list li { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.row-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.row-actions button, .face-actions button:not(.button), .face-admin button { border: 1px solid var(--line); background: white; border-radius: 10px; padding: 6px 8px; cursor: pointer; }
+.table-wrap { overflow-x: auto; }
+.face-admin { display: grid; gap: 16px; }
+.face-admin .toolbar { justify-content: flex-start; }

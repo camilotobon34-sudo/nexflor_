@@ -507,5 +507,64 @@
     "username": "admin",
     "name": "Administrador",
     "passwordHash": "8d9cc7e2af6519c8f631d0f55fea9974:bb6d05fd32b66bcf6efb393c2a4e520274ce435f0be511a9529cfe2a1ebb5adc"
-  }
+  },
+  "facePeople": [],
+  "accessEvents": [
+    {
+      "id": "a_54758c0f02e60490",
+      "at": 1792460681193,
+      "personId": null,
+      "name": null,
+      "documentId": "",
+      "result": "denegado",
+      "access": "denegado",
+      "reason": "imagen",
+      "method": "rostro",
+      "attempts": 1
+    },
+    {
+      "id": "a_990abc04b0c88f29",
+      "at": 1792460683494,
+      "personId": null,
+      "name": null,
+      "documentId": "",
+      "result": "denegado",
+      "access": "denegado",
+      "reason": "imagen",
+      "method": "rostro",
+      "attempts": 2
+    },
+    {
+      "id": "a_ed5d05345fa605f9",
+      "at": 1792463062468,
+      "personId": null,
+      "name": null,
+      "documentId": "",
+      "result": "denegado",
+      "access": "denegado",
+      "reason": "imagen",
+      "method": "rostro",
+      "attempts": 1,
+      "by": "portero"
+    }
+  ],
+  "faceAlerts": [],
+  "adminAudit": [],
+  "faceGuard": {
+    "count": 1,
+    "since": 1792463062467,
+    "until": 0,
+    "alerted": false
+  },
+  "staff": [
+    {
+      "id": "s_808eab8d",
+      "username": "portero",
+      "name": "Personal de ingreso",
+      "role": "portero",
+      "active": true,
+      "passwordHash": "8db08d5430c058a44b2c07ee660c30ae:c94014996d758815830e2f421f3af0c05b4bd3d111f6aba7efa3e1214848729f",
+      "createdAt": 1792463023571
+    }
+  ]
 }

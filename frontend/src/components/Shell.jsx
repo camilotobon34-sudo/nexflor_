@@ -7,6 +7,7 @@ const links = [
   { to: "/practica/preparacion-segura", label: "Práctica", icon: CheckIcon },
   { to: "/equipo", label: "Equipo", icon: PeopleIcon },
   { to: "/progreso", label: "Progreso", icon: ChartIcon },
+  { to: "/entrar", label: "Acceso", icon: FaceIcon },
 ];
 
 export default function Shell() {
@@ -105,6 +106,15 @@ function PeopleIcon() {
       <path d="M4.5 19c.6-2.4 2.4-3.5 4.5-3.5s3.9 1.1 4.5 3.5" />
       <circle cx="17" cy="9.5" r="2.2" />
       <path d="M16 15.6c1.4.3 2.5 1.2 3.1 3" />
+    </svg>
+  );
+}
+function FaceIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="10" r="3.2" />
+      <path d="M6 19c.8-2.4 2.8-3.6 6-3.6s5.2 1.2 6 3.6" />
+      <path d="M5 8V5.5h2.5M19 8V5.5h-2.5M5 13v2.5h2.5M19 13v2.5h-2.5" />
     </svg>
   );
 }

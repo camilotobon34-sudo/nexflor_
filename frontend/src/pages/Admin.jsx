@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api.js";
+import { clearSession, readSession, saveSession, TOKEN_KEY } from "../session.js";
+import FaceAdmin from "./FaceAdmin.jsx";
 
-export const TOKEN_KEY = "serrania-admin";
+export { TOKEN_KEY };
 
 async function adminApi(path, token, options = {}) {
   return api(path, {
@@ -12,15 +14,15 @@ async function adminApi(path, token, options = {}) {
 }
 
 export default function Admin() {
-  const [token, setToken] = useState(() => sessionStorage.getItem(TOKEN_KEY) || "");
+  const [session, setSession] = useState(readSession);
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     localStorage.removeItem(TOKEN_KEY);
     const lock = () => {
-      sessionStorage.removeItem(TOKEN_KEY);
-      setToken("");
+      clearSession();
+      setSession(readSession());
       setData(null);
     };
     window.addEventListener("serrania-admin-lock", lock);
@@ -28,14 +30,37 @@ export default function Admin() {
   }, []);
 
   function logout() {
-    sessionStorage.removeItem(TOKEN_KEY);
-    setToken("");
+    clearSession();
+    setSession(readSession());
     setData(null);
   }
 
-  if (!token) {
-    return <Login onToken={(value) => { sessionStorage.setItem(TOKEN_KEY, value); setToken(value); }} />;
+  function enter(body) {
+    saveSession(body);
+    setSession(readSession());
   }
+
+  if (!session.token) {
+    return <Login onToken={enter} />;
+  }
+
+  if (session.role === "portero") {
+    return (
+      <main className="login">
+        <section className="card">
+          <p className="eyebrow">Serranía</p>
+          <h1>Panel de administración</h1>
+          <p>La cuenta de {session.name || "escaneo"} puede registrar y verificar ingresos. Los reportes, las alertas y las aprobaciones quedan en la cuenta de administrador.</p>
+          <div className="face-actions">
+            <Link className="button" to="/ingreso">Ir a reconocimiento facial</Link>
+            <button type="button" onClick={logout}>Salir</button>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  const token = session.token;
 
   return (
     <Panel
@@ -64,7 +89,7 @@ function Login({ onToken }) {
         method: "POST",
         body: JSON.stringify({ username, password }),
       });
-      onToken(body.token);
+      onToken(body);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -121,9 +146,9 @@ function Panel({ token, data, setData, error, setError, logout }) {
         </div>
       </header>
       <div className="chips">
-        {["cursos", "equipo", "archivos"].map((item) => (
+        {[["cursos", "Cursos"], ["equipo", "Equipo"], ["archivos", "Archivos"], ["ingreso", "Asistencia"]].map(([item, label]) => (
           <button key={item} type="button" className={tab === item ? "on" : ""} onClick={() => setTab(item)}>
-            {item[0].toUpperCase() + item.slice(1)}
+            {label}
           </button>
         ))}
       </div>
@@ -134,6 +159,7 @@ function Panel({ token, data, setData, error, setError, logout }) {
       )}
       {data && tab === "equipo" && <TeamTab token={token} people={data.team} reload={load} />}
       {data && tab === "archivos" && <FilesTab token={token} files={data.files} reload={load} />}
+      {data && tab === "ingreso" && <FaceAdmin token={token} />}
     </main>
   );
 }
