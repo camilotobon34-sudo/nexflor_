@@ -1,5 +1,5 @@
-import { NavLink, Outlet } from "react-router-dom";
-import { useApi } from "../api.js";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useApi, WORKER_KEY } from "../api.js";
 
 const links = [
   { to: "/", label: "Inicio", end: true, icon: HomeIcon },
@@ -11,6 +11,12 @@ const links = [
 
 export default function Shell() {
   const me = useApi("/me");
+  const navigate = useNavigate();
+
+  function leave() {
+    sessionStorage.removeItem(WORKER_KEY);
+    navigate("/entrar");
+  }
   const formatted = new Intl.DateTimeFormat("es-CO", {
     weekday: "long",
     day: "numeric",
@@ -22,11 +28,7 @@ export default function Shell() {
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
-          <span className="mark">S</span>
-          <div>
-            <strong>Serranía</strong>
-            <small>Taller floral</small>
-          </div>
+          <img className="brand-logo" src="/logo-trigal.png" alt="Flores El Trigal" />
         </div>
         <nav>
           {links.map((link) => (
@@ -45,8 +47,10 @@ export default function Shell() {
       </aside>
       <div className="main">
         <header className="topbar">
+          <img className="top-logo" src="/logo-trigal.png" alt="Flores El Trigal" />
           <p>{today}</p>
           <NavLink to="/admin" className="admin-link top-admin">Administrar</NavLink>
+          <button type="button" className="text-link" onClick={leave}>Salir</button>
           <div className="who">
             <span>{me.data?.initials || "LM"}</span>
             <div>

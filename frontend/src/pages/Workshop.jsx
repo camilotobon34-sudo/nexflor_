@@ -22,7 +22,7 @@ export default function Workshop() {
         <section className="page">
           <p className="eyebrow">Así se ve el puesto</p>
           <h1>En el taller</h1>
-          <p className="lede">{data.title}. Dos fotos del mismo trabajo: la mesa antes y el ramo ya armado.</p>
+          <p className="lede">{data.title}. Fotos del cultivo y de las flores con las que se trabaja en El Trigal.</p>
           <div className="gallery">
             {(data.gallery?.length ? data.gallery : [{ image: data.image, caption: data.title }]).map((shot) => (
               <figure key={shot.caption}>

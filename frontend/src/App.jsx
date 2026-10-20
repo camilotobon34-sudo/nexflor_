@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { workerToken } from "./api.js";
 import Shell from "./components/Shell.jsx";
 import Home from "./pages/Home.jsx";
 import Courses from "./pages/Courses.jsx";
@@ -9,15 +10,22 @@ import Practice from "./pages/Practice.jsx";
 import Team from "./pages/Team.jsx";
 import Progress from "./pages/Progress.jsx";
 import Admin from "./pages/Admin.jsx";
+import Enter from "./pages/Enter.jsx";
 import AdminShortcut from "./components/AdminShortcut.jsx";
+
+function Guard() {
+  if (!workerToken()) return <Navigate to="/entrar" replace />;
+  return <Shell />;
+}
 
 export default function App() {
   return (
     <>
     <AdminShortcut />
     <Routes>
+      <Route path="entrar" element={<Enter />} />
       <Route path="admin" element={<Admin />} />
-      <Route element={<Shell />}>
+      <Route element={<Guard />}>
         <Route index element={<Home />} />
         <Route path="cursos" element={<Courses />} />
         <Route path="cursos/:id" element={<Course />} />

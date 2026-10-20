@@ -152,15 +152,15 @@ function CourseBody({ data, current, setCurrent, busy, note, toast, toggle }) {
 
       <div className="split">
         <section className="card note-card">
-          <h3>En el mesón</h3>
-          <p>Antes de pasar a la práctica, mira cómo queda la mesa cuando el puesto está bien dejado.</p>
+          <h3>En el cultivo</h3>
+          <p>Antes de la práctica, mira las fotos de las camas y de la flor de este curso.</p>
           <Link to={`/cursos/${data.id}/taller`}>Ver el taller</Link>
         </section>
         <section className="card sand">
           <h3>{data.game?.title || "Juego de la actividad"}</h3>
           <p>
             {ready
-              ? "Ya cerraste las lecciones. Ahora haz la actividad en el orden del mesón."
+              ? "Ya cerraste las lecciones. Ahora haz la actividad en el orden del cultivo."
               : `Termina las ${data.progress.total - data.progress.done} lecciones que faltan para desbloquear el juego.`}
           </p>
           {ready ? (

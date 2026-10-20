@@ -47,33 +47,61 @@ function publicCourse(course, completed) {
   };
 }
 
-function completedSet(db) {
-  return new Set(db.progress.completedLessons);
+function progressBag(db, workerId) {
+  if (!workerId) return db.progress;
+  const worker = (db.workers || []).find((item) => item.id === workerId);
+  if (!worker) return { completedLessons: [], attempts: [] };
+  if (!Array.isArray(worker.completedLessons)) worker.completedLessons = [];
+  if (!Array.isArray(worker.attempts)) worker.attempts = [];
+  return worker;
+}
+
+function completedSet(db, workerId) {
+  return new Set(progressBag(db, workerId).completedLessons);
+}
+
+function initials(name) {
+  return String(name || "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
 }
 
 export function health() {
   return { ok: true };
 }
 
-export function me() {
+export function me(workerId) {
   const db = read();
-  return db.user;
+  const worker = workerId && (db.workers || []).find((item) => item.id === workerId);
+  if (!worker) return db.user;
+  return {
+    id: worker.id,
+    name: worker.name.split(" ")[0],
+    fullName: worker.name,
+    role: "Trabajador",
+    initials: initials(worker.name),
+    continueCourseId: worker.continueCourseId || db.user.continueCourseId,
+  };
 }
 
-export function listCourses() {
+export function listCourses(workerId) {
   const db = read();
-  const completed = completedSet(db);
+  const completed = completedSet(db, workerId);
   return db.courses.map((course) => publicCourse(enrich(course), completed));
 }
 
-export function getCourse(id) {
+export function getCourse(id, workerId) {
   const db = read();
   const found = db.courses.find((item) => item.id === id);
   if (!found) return null;
   const course = enrich(found);
-  const completed = completedSet(db);
+  const completed = completedSet(db, workerId);
   const progress = courseProgress(course, completed);
-  const lastAttempt = [...db.progress.attempts].reverse().find((attempt) => attempt.courseId === id) || null;
+  const lastAttempt = [...progressBag(db, workerId).attempts].reverse().find((attempt) => attempt.courseId === id) || null;
   return {
     ...publicCourse(course, completed),
     gallery: course.gallery,
@@ -90,33 +118,36 @@ export function getCourse(id) {
   };
 }
 
-export function toggleLesson(courseId, lessonId) {
+export function toggleLesson(courseId, lessonId, workerId) {
   const db = read();
   const course = db.courses.find((item) => item.id === courseId);
   if (!course) return null;
   const lesson = course.lessons.find((item) => item.id === lessonId);
   if (!lesson) return null;
   const key = lessonKey(courseId, lessonId);
-  const list = db.progress.completedLessons;
+  const bag = progressBag(db, workerId);
+  const list = bag.completedLessons;
   const index = list.indexOf(key);
   if (index >= 0) list.splice(index, 1);
   else list.push(key);
-  const completed = completedSet(db);
-  const laura = db.team.find((person) => person.id === "laura");
-  if (laura) {
-    const all = db.courses.reduce((sum, item) => sum + item.lessons.length, 0);
-    const done = db.progress.completedLessons.length;
-    laura.progress = all ? Math.round((done / all) * 100) : 0;
+  const all = db.courses.reduce((sum, item) => sum + item.lessons.length, 0);
+  const percent = all ? Math.round(list.length / all * 100) : 0;
+  const personId = workerId || "laura";
+  const person = db.team.find((item) => item.id === personId);
+  if (person) person.progress = percent;
+  if (workerId) {
+    const worker = (db.workers || []).find((item) => item.id === workerId);
+    if (worker) worker.progress = percent;
   }
   write(db);
-  return getCourse(courseId);
+  return getCourse(courseId, workerId);
 }
 
-export function getQuiz(courseId) {
+export function getQuiz(courseId, workerId) {
   const db = read();
   const course = db.courses.find((item) => item.id === courseId);
   if (!course) return null;
-  const lastAttempt = [...db.progress.attempts].reverse().find((attempt) => attempt.courseId === courseId) || null;
+  const lastAttempt = [...progressBag(db, workerId).attempts].reverse().find((attempt) => attempt.courseId === courseId) || null;
   return {
     courseId: course.id,
     courseTitle: course.title,
@@ -133,7 +164,7 @@ export function getQuiz(courseId) {
   };
 }
 
-export function submitQuiz(courseId, answers) {
+export function submitQuiz(courseId, answers, workerId) {
   const db = read();
   const course = db.courses.find((item) => item.id === courseId);
   if (!course) return null;
@@ -160,7 +191,7 @@ export function submitQuiz(courseId, answers) {
     percent: total ? Math.round((score / total) * 100) : 0,
     at: new Date().toISOString(),
   };
-  db.progress.attempts.push(attempt);
+  progressBag(db, workerId).attempts.push(attempt);
   write(db);
   return { ...attempt, results };
 }
@@ -171,8 +202,8 @@ export function listTeam() {
     ? Math.round(db.team.reduce((sum, person) => sum + person.progress, 0) / db.team.length)
     : 0;
   return {
-    title: "Un equipo que crece seguro",
-    summary: "Cada persona tiene un recorrido. Aquí se ve quién va al día y quién necesita un rato en el mesón.",
+    title: "El equipo del cultivo",
+    summary: "Cada persona tiene su recorrido. Aquí se ve quién va al día en las camas, la poscosecha y la seguridad.",
     stats: [
       { label: "Personas", value: String(db.team.length) },
       { label: "Turno mañana", value: String(db.team.filter((person) => person.shift === "Mañana").length) },
@@ -183,9 +214,11 @@ export function listTeam() {
   };
 }
 
-export function progressReport() {
+export function progressReport(workerId) {
   const db = read();
-  const completed = completedSet(db);
+  const completed = completedSet(db, workerId);
+  const bag = progressBag(db, workerId);
+  const learner = workerId ? me(workerId).name : db.user.name;
   const courses = db.courses.map((course) => {
     const progress = courseProgress(course, completed);
     return {
@@ -205,13 +238,13 @@ export function progressReport() {
     return sum + doneMinutes;
   }, 0);
   const pendingPractice = db.courses.filter((course) => {
-    const attempt = db.progress.attempts.some((item) => item.courseId === course.id);
+    const attempt = bag.attempts.some((item) => item.courseId === course.id);
     const progress = courseProgress(course, completed);
     return progress.percent > 0 && !attempt;
   }).length;
   return {
     title: "Aprendizaje de cada recorrido",
-    summary: "Lo que Laura ya cerró y lo que sigue abierto en el taller.",
+    summary: `Lo que ${learner} ya cerró y lo que sigue abierto en el taller.`,
     stats: [
       { label: "Cursos sin empezar", value: String(courses.filter((course) => course.percent === 0).length) },
       { label: "Lecciones listas", value: String(courses.reduce((sum, course) => sum + course.done, 0)) },
@@ -229,11 +262,13 @@ export function progressReport() {
   };
 }
 
-export function dashboard() {
+export function dashboard(workerId) {
   const db = read();
-  const completed = completedSet(db);
+  const person = me(workerId);
+  const completed = completedSet(db, workerId);
+  const bag = progressBag(db, workerId);
   const courses = db.courses.map((course) => ({ course, progress: courseProgress(course, completed) }));
-  const continueCourse = db.courses.find((course) => course.id === db.user.continueCourseId) || db.courses[0];
+  const continueCourse = db.courses.find((course) => course.id === person.continueCourseId) || db.courses[0];
   const continueProgress = courseProgress(continueCourse, completed);
   const nextLesson = continueCourse.lessons.find((lesson) => !completed.has(lessonKey(continueCourse.id, lesson.id)))
     || continueCourse.lessons[0];
@@ -241,7 +276,7 @@ export function dashboard() {
   const lessonsTotal = courses.reduce((sum, item) => sum + item.progress.total, 0);
   const average = lessonsTotal ? Math.round((lessonsDone / lessonsTotal) * 100) : 0;
   const openCourses = courses.filter((item) => item.progress.percent > 0 && item.progress.percent < 100).length;
-  const pendingQuiz = courses.filter((item) => !db.progress.attempts.some((attempt) => attempt.courseId === item.course.id)).length;
+  const pendingQuiz = courses.filter((item) => !bag.attempts.some((attempt) => attempt.courseId === item.course.id)).length;
 
   const tasks = db.courses.flatMap((course) => course.lessons
     .filter((lesson) => !completed.has(lessonKey(course.id, lesson.id)))
@@ -257,11 +292,11 @@ export function dashboard() {
   const hello = hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
 
   return {
-    greeting: `${hello}, ${db.user.name}`,
-    subtitle: "El turno del taller, los cursos y el equipo, en la misma mesa.",
+    greeting: `${hello}, ${person.name}`,
+    subtitle: "Las plantas, las camas y el despacho, en el orden en que se trabaja.",
     banner: {
       kicker: "Sigue donde lo dejaste",
-      title: "El bienestar de tu equipo, en un solo lugar.",
+      title: "El cultivo, paso a paso.",
       text: `${continueCourse.title}. Lección abierta: ${nextLesson.title}.`,
       cta: "Continuar",
       href: `/cursos/${continueCourse.id}`,

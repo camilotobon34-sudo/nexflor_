@@ -10,56 +10,60 @@
   "courses": [
     {
       "id": "preparacion-segura",
-      "title": "Preparación segura de arreglos florales",
-      "summary": "Cómo armar un ramo sin cortes, químicos mal usados ni posturas que duelan al día siguiente.",
-      "category": "Seguridad",
+      "title": "Las plantas del Trigal",
+      "summary": "Pompón, cremón, spider, hortensia, snapdragon, solidago, trachelium y follaje. También las cuatro sedes: Aguas Claras, Olas, Caribe y Manantiales.",
+      "category": "Cultivo",
       "minutes": 42,
-      "level": "Base",
-      "image": "https://images.unsplash.com/photo-1487530811176-3780de880c2d?auto=format&fit=crop&w=1200&q=80",
+      "level": "Paso 1",
+      "image": "/flores/pompon-real.jpg",
       "gallery": [
         {
-          "image": "https://images.unsplash.com/photo-1468327768560-75b778cbb551?auto=format&fit=crop&w=900&q=80",
-          "caption": "Mesa de corte despejada"
+          "image": "/flores/pompon-real.jpg",
+          "caption": "Pompón en punto comercial"
         },
         {
-          "image": "https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&w=900&q=80",
-          "caption": "Armado del ramo en pareja"
+          "image": "/flores/camas-magenta.jpg",
+          "caption": "Camas de crisantemo"
+        },
+        {
+          "image": "/flores/revision-botones.jpg",
+          "caption": "Revisión del botón"
         }
       ],
       "lessons": [
         {
           "id": "puesto",
-          "title": "Reconocer el puesto antes de empezar",
+          "title": "Pompón, cremón y spider",
           "minutes": 8,
           "kind": "video"
         },
         {
           "id": "filo",
-          "title": "Tijeras, cuchillo y el sentido del corte",
+          "title": "Hortensia y snapdragon",
           "minutes": 7,
           "kind": "video"
         },
         {
           "id": "espinas",
-          "title": "Espinas, tallos duros y alambre",
+          "title": "Solidago, trachelium y follaje",
           "minutes": 6,
           "kind": "practica"
         },
         {
           "id": "quimicos",
-          "title": "Agua, conservante y qué no se mezcla",
+          "title": "Las cuatro sedes",
           "minutes": 8,
           "kind": "lectura"
         },
         {
           "id": "postura",
-          "title": "Postura en la mesa y pausas",
+          "title": "Qué se mira antes de cortar",
           "minutes": 6,
           "kind": "video"
         },
         {
           "id": "cierre",
-          "title": "Cierre del turno y residuos",
+          "title": "Lo que todavía no se corta",
           "minutes": 7,
           "kind": "practica"
         }
@@ -67,152 +71,322 @@
       "quiz": [
         {
           "id": "q1",
-          "prompt": "Antes de cortar el primer tallo, ¿qué revisas en la mesa?",
+          "prompt": "El pompón se reconoce porque…",
           "options": [
             {
               "id": "a",
-              "text": "Que el ramo del pedido anterior siga ahí, para copiarlo rápido"
+              "text": "Abre pétalos largos y delgados"
             },
             {
               "id": "b",
-              "text": "Que la mesa esté despejada, seca y con las herramientas en su sitio"
+              "text": "Es una bola de muchos pétalos"
             },
             {
               "id": "c",
-              "text": "Solo el color de las flores; el orden se deja para el cierre"
+              "text": "Crece en una espiga de abajo hacia arriba"
             }
           ],
           "correct": "b"
         },
         {
           "id": "q2",
-          "prompt": "Una tijera de taller se guarda…",
+          "prompt": "¿Cuál de estas es una sede de El Trigal?",
           "options": [
             {
               "id": "a",
-              "text": "Abierta, para tenerla lista en el siguiente pedido"
+              "text": "Aguas Claras, en El Carmen de Viboral"
             },
             {
               "id": "b",
-              "text": "En el bolsillo del delantal mientras atiendes"
+              "text": "El Poblado, en Medellín"
             },
             {
               "id": "c",
-              "text": "Cerrada, limpia y en el cajón o el gancho marcado"
+              "text": "El centro de Bogotá"
             }
           ],
-          "correct": "c"
+          "correct": "a"
         },
         {
           "id": "q3",
-          "prompt": "El conservante de las flores se mezcla…",
+          "prompt": "El solidago se usa sobre todo como…",
           "options": [
             {
               "id": "a",
-              "text": "Con la dosis del envase, en agua limpia, sin agregar otros productos"
+              "text": "Relleno de varas finas"
             },
             {
               "id": "b",
-              "text": "Con cloro, para que el agua dure más días"
+              "text": "La flor principal del ramo"
             },
             {
               "id": "c",
-              "text": "A ojo, hasta que el agua huela fuerte"
+              "text": "El follaje de hoja ancha"
             }
           ],
           "correct": "a"
         },
         {
           "id": "q4",
-          "prompt": "Si llevas más de una hora de pie armando ramos, lo que toca es…",
+          "prompt": "Si el botón todavía está muy cerrado…",
           "options": [
             {
               "id": "a",
-              "text": "Seguir hasta terminar el pedido, aunque duela la espalda"
+              "text": "Se corta para completar el número"
             },
             {
               "id": "b",
-              "text": "Bajar los hombros, cambiar el peso y hacer una pausa corta"
+              "text": "Se abre con la mano"
             },
             {
               "id": "c",
-              "text": "Sentarte sobre la mesa de corte para descansar las piernas"
+              "text": "Se deja en la cama"
             }
           ],
-          "correct": "b"
+          "correct": "c"
         }
       ]
     },
     {
       "id": "herramientas",
-      "title": "Herramientas del mesón",
-      "summary": "Qué se usa para cada tallo y cómo se entrega el puesto al siguiente turno.",
-      "category": "Taller",
+      "title": "Enraizar y sembrar",
+      "summary": "Del esqueje a la cama: sustrato que drene, raíz formada y siembra derecha. Lo que no prende se anota.",
+      "category": "Campo",
       "minutes": 28,
-      "level": "Base",
-      "image": "https://images.unsplash.com/photo-1455659817273-f96807779a8a?auto=format&fit=crop&w=1200&q=80",
-      "gallery": [],
+      "level": "Paso 2",
+      "image": "/flores/plantula.jpg",
+      "gallery": [
+        {
+          "image": "/flores/plantula.jpg",
+          "caption": "Plántula lista para la cama"
+        },
+        {
+          "image": "/flores/invernadero.jpg",
+          "caption": "Trabajo dentro del invernadero"
+        }
+      ],
       "lessons": [
         {
           "id": "mapa",
-          "title": "Mapa del mesón",
+          "title": "El esqueje",
           "minutes": 6,
           "kind": "lectura"
         },
         {
           "id": "afilado",
-          "title": "Cuándo una hoja ya no corta bien",
+          "title": "El sustrato",
           "minutes": 8,
           "kind": "video"
         },
         {
           "id": "entrega",
-          "title": "Entregar el puesto",
+          "title": "Cuando ya hay raíz",
           "minutes": 7,
           "kind": "practica"
         },
         {
           "id": "reporte",
-          "title": "Anotar una herramienta dañada",
+          "title": "Sembrar en la cama",
           "minutes": 7,
           "kind": "practica"
         }
       ],
       "quiz": [
         {
-          "id": "h1",
-          "prompt": "Una tijera que aplasta el tallo en vez de cortarlo…",
+          "id": "q1",
+          "prompt": "Un esqueje es…",
           "options": [
             {
               "id": "a",
-              "text": "Se sigue usando: el ramo se ve igual"
+              "text": "Un trozo de tallo que todavía debe echar raíz"
             },
             {
               "id": "b",
-              "text": "Se aparta y se reporta para afilar o cambiar"
+              "text": "Una flor ya abierta para la caja"
             },
             {
               "id": "c",
-              "text": "Se presta al reparto para abrir cajas"
+              "text": "Un ramo empacado"
+            }
+          ],
+          "correct": "a"
+        },
+        {
+          "id": "q2",
+          "prompt": "Si el sustrato queda encharcado…",
+          "options": [
+            {
+              "id": "a",
+              "text": "La raíz sale más rápido"
+            },
+            {
+              "id": "b",
+              "text": "La base se pudre"
+            },
+            {
+              "id": "c",
+              "text": "No cambia nada"
             }
           ],
           "correct": "b"
         },
         {
-          "id": "h2",
-          "prompt": "Al cerrar el turno, las herramientas quedan…",
+          "id": "q3",
+          "prompt": "Se pasa a la cama cuando…",
           "options": [
             {
               "id": "a",
-              "text": "Donde se usaron por última vez"
+              "text": "El esqueje acaba de llegar, siempre"
             },
             {
               "id": "b",
-              "text": "Limpias, cerradas y en el lugar marcado"
+              "text": "El cliente lo pide por teléfono"
             },
             {
               "id": "c",
-              "text": "Dentro del balde de las flores, para no perderlas"
+              "text": "Ya hay raíz formada"
+            }
+          ],
+          "correct": "c"
+        },
+        {
+          "id": "q4",
+          "prompt": "Lo que no prendió…",
+          "options": [
+            {
+              "id": "a",
+              "text": "Se anota"
+            },
+            {
+              "id": "b",
+              "text": "Se esconde entre las plantas buenas"
+            },
+            {
+              "id": "c",
+              "text": "Se manda a empaque"
+            }
+          ],
+          "correct": "a"
+        }
+      ]
+    },
+    {
+      "id": "higiene",
+      "title": "Riego y cuidado de la cama",
+      "summary": "Agua limpia, riego por goteo a la raíz y desbotone del spider, el cremón y el super mum para que la flor principal crezca.",
+      "category": "Campo",
+      "minutes": 24,
+      "level": "Paso 3",
+      "image": "/flores/camas-magenta.jpg",
+      "gallery": [
+        {
+          "image": "/flores/camas-magenta.jpg",
+          "caption": "Camas del invernadero"
+        },
+        {
+          "image": "/flores/equipo-campo.jpg",
+          "caption": "El equipo en el cultivo"
+        }
+      ],
+      "lessons": [
+        {
+          "id": "baldes",
+          "title": "Agua limpia",
+          "minutes": 6,
+          "kind": "practica"
+        },
+        {
+          "id": "agua",
+          "title": "Riego por goteo",
+          "minutes": 8,
+          "kind": "video"
+        },
+        {
+          "id": "panos",
+          "title": "Desbotone",
+          "minutes": 5,
+          "kind": "lectura"
+        },
+        {
+          "id": "manos",
+          "title": "Manos limpias",
+          "minutes": 5,
+          "kind": "practica"
+        }
+      ],
+      "quiz": [
+        {
+          "id": "q1",
+          "prompt": "El riego de la cama llega…",
+          "options": [
+            {
+              "id": "a",
+              "text": "En un balde sobre las flores"
+            },
+            {
+              "id": "b",
+              "text": "Por goteo, a la raíz"
+            },
+            {
+              "id": "c",
+              "text": "Solo cuando llueve"
+            }
+          ],
+          "correct": "b"
+        },
+        {
+          "id": "q2",
+          "prompt": "El desbotone sirve para…",
+          "options": [
+            {
+              "id": "a",
+              "text": "Que la flor principal se desarrolle"
+            },
+            {
+              "id": "b",
+              "text": "Quitar todas las flores de la mata"
+            },
+            {
+              "id": "c",
+              "text": "Secar el tallo"
+            }
+          ],
+          "correct": "a"
+        },
+        {
+          "id": "q3",
+          "prompt": "El agua turbia de ayer…",
+          "options": [
+            {
+              "id": "a",
+              "text": "Se rellena y sigue"
+            },
+            {
+              "id": "b",
+              "text": "Se echa sobre el pompón"
+            },
+            {
+              "id": "c",
+              "text": "No se vuelve a usar"
+            }
+          ],
+          "correct": "c"
+        },
+        {
+          "id": "q4",
+          "prompt": "Si no sabes cuál es el botón principal…",
+          "options": [
+            {
+              "id": "a",
+              "text": "Arrancas el más grande"
+            },
+            {
+              "id": "b",
+              "text": "Preguntas antes de tocar"
+            },
+            {
+              "id": "c",
+              "text": "Cortas la mata completa"
             }
           ],
           "correct": "b"
@@ -221,184 +395,272 @@
     },
     {
       "id": "atencion",
-      "title": "Atención en el local",
-      "summary": "Recibir un pedido, repetir los datos y no prometer lo que la cámara no tiene.",
-      "category": "Atención",
+      "title": "Cosechar en el punto justo",
+      "summary": "Se corta la variedad, el color y la apertura que pide la orden. Si esa flor no está lista, se avisa y no se cambia en silencio.",
+      "category": "Cosecha",
       "minutes": 35,
-      "level": "Intermedio",
-      "image": "https://images.unsplash.com/photo-1525310072745-f49212b5ac6d?auto=format&fit=crop&w=1200&q=80",
-      "gallery": [],
+      "level": "Paso 4",
+      "image": "/flores/revision-botones.jpg",
+      "gallery": [
+        {
+          "image": "/flores/revision-botones.jpg",
+          "caption": "Revisión del botón antes del corte"
+        },
+        {
+          "image": "/flores/cosecha-amarilla.jpg",
+          "caption": "Cosecha en la cama"
+        },
+        {
+          "image": "/flores/equipo-visita.jpg",
+          "caption": "Entre las camas"
+        }
+      ],
       "lessons": [
         {
           "id": "saludo",
-          "title": "El saludo y la primera pregunta",
+          "title": "El pedido antes del corte",
           "minutes": 8,
           "kind": "video"
         },
         {
           "id": "pedido",
-          "title": "Anotar fecha, color y presupuesto",
+          "title": "El punto de corte",
           "minutes": 9,
           "kind": "practica"
         },
         {
           "id": "faltante",
-          "title": "Qué decir si falta una flor",
+          "title": "Si esa variedad no está",
           "minutes": 8,
           "kind": "lectura"
         },
         {
           "id": "cierre-venta",
-          "title": "Confirmar el pedido en voz alta",
+          "title": "Contar lo cortado",
           "minutes": 10,
           "kind": "practica"
         }
       ],
       "quiz": [
         {
-          "id": "a1",
-          "prompt": "Si el cliente pide una flor que no está en cámara, tú…",
+          "id": "q1",
+          "prompt": "Antes de cortar se mira…",
           "options": [
             {
               "id": "a",
-              "text": "La prometes y después ves cómo se consigue"
+              "text": "La orden: variedad, color y punto"
             },
             {
               "id": "b",
-              "text": "Dices qué hay hoy y ofreces una alternativa parecida"
+              "text": "Solo el color que más hay en la cama"
             },
             {
               "id": "c",
-              "text": "Cierras la venta sin mencionar el cambio"
+              "text": "La hora de salida"
             }
           ],
-          "correct": "b"
-        }
-      ]
-    },
-    {
-      "id": "higiene",
-      "title": "Higiene y agua del taller",
-      "summary": "Baldes, paños y el agua que no se reutiliza de un día para otro.",
-      "category": "Seguridad",
-      "minutes": 24,
-      "level": "Base",
-      "image": "https://images.unsplash.com/photo-1496062031456-07b8f162a322?auto=format&fit=crop&w=1200&q=80",
-      "gallery": [],
-      "lessons": [
-        {
-          "id": "baldes",
-          "title": "Baldes limpios al empezar",
-          "minutes": 6,
-          "kind": "practica"
+          "correct": "a"
         },
         {
-          "id": "agua",
-          "title": "Cambiar el agua, no solo rellenarla",
-          "minutes": 8,
-          "kind": "video"
-        },
-        {
-          "id": "panos",
-          "title": "Paños de mesa y paños de piso",
-          "minutes": 5,
-          "kind": "lectura"
-        },
-        {
-          "id": "manos",
-          "title": "Manos antes de tocar envoltura",
-          "minutes": 5,
-          "kind": "practica"
-        }
-      ],
-      "quiz": [
-        {
-          "id": "g1",
-          "prompt": "El agua de los baldes del lunes…",
+          "id": "q2",
+          "prompt": "Una flor pasada o muy cerrada…",
           "options": [
             {
               "id": "a",
-              "text": "Sirve el martes si las flores siguen frescas"
+              "text": "Se mete al centro del ramo"
             },
             {
               "id": "b",
-              "text": "Se cambia; no se reutiliza para el día siguiente"
+              "text": "No se corta para completar el número"
             },
             {
               "id": "c",
-              "text": "Se mezcla con conservante nuevo y se deja"
+              "text": "Se abre o se cierra con la mano"
             }
           ],
           "correct": "b"
+        },
+        {
+          "id": "q3",
+          "prompt": "Si el color del pedido no está listo…",
+          "options": [
+            {
+              "id": "a",
+              "text": "Se cambia por otro sin decir nada"
+            },
+            {
+              "id": "b",
+              "text": "Se promete para hoy igual"
+            },
+            {
+              "id": "c",
+              "text": "Se avisa y se deja la novedad"
+            }
+          ],
+          "correct": "c"
+        },
+        {
+          "id": "q4",
+          "prompt": "Al salir de la cama…",
+          "options": [
+            {
+              "id": "a",
+              "text": "Se cuenta lo cortado"
+            },
+            {
+              "id": "b",
+              "text": "Se confía en la memoria"
+            },
+            {
+              "id": "c",
+              "text": "Se mezcla con lo de ayer"
+            }
+          ],
+          "correct": "a"
         }
       ]
     },
     {
       "id": "empaque",
-      "title": "Empaque y entrega",
-      "summary": "Que el ramo salga firme, con tarjeta legible y sin agua en el vehículo.",
-      "category": "Taller",
+      "title": "Poscosecha: hidratar y empacar",
+      "summary": "Agua limpia al llegar del campo, ramo etiquetado, cuarto frío y caja seca por dentro hasta el despacho.",
+      "category": "Poscosecha",
       "minutes": 30,
-      "level": "Intermedio",
-      "image": "https://images.unsplash.com/photo-1563241527-3004b7be0ffd?auto=format&fit=crop&w=1200&q=80",
-      "gallery": [],
+      "level": "Paso 5",
+      "image": "/flores/cosecha-rosa.jpg",
+      "gallery": [
+        {
+          "image": "/flores/cosecha-rosa.jpg",
+          "caption": "Ramo recién cortado"
+        },
+        {
+          "image": "/flores/equipo-trigal.jpg",
+          "caption": "Equipo de Flores El Trigal"
+        }
+      ],
       "lessons": [
         {
           "id": "base",
-          "title": "La base que no se abre en el camino",
+          "title": "Hidratar al llegar",
           "minutes": 8,
           "kind": "video"
         },
         {
           "id": "tarjeta",
-          "title": "Tarjeta, nombre y hora",
+          "title": "Armar y etiquetar",
           "minutes": 7,
           "kind": "practica"
         },
         {
           "id": "ruta",
-          "title": "Cómo se carga la caja en el reparto",
+          "title": "Cuarto frío y despacho",
           "minutes": 8,
           "kind": "lectura"
         },
         {
           "id": "novedad",
-          "title": "Si el ramo se mueve, se repara antes de salir",
+          "title": "Caja seca por dentro",
           "minutes": 7,
           "kind": "practica"
         }
       ],
       "quiz": [
         {
-          "id": "e1",
-          "prompt": "Un ramo que gotea se sube a la moto…",
+          "id": "q1",
+          "prompt": "Al llegar de campo, la flor…",
           "options": [
             {
               "id": "a",
-              "text": "Igual: en el camino se seca"
+              "text": "Se deja al sol para que seque"
             },
             {
               "id": "b",
-              "text": "Solo si el cliente vive cerca"
+              "text": "Se hidrata en agua limpia"
             },
             {
               "id": "c",
-              "text": "No. Se seca la base y se revisa el empaque antes de salir"
+              "text": "Se empaca seca, sin beber"
+            }
+          ],
+          "correct": "b"
+        },
+        {
+          "id": "q2",
+          "prompt": "La etiqueta sirve para…",
+          "options": [
+            {
+              "id": "a",
+              "text": "Saber qué pedido es"
+            },
+            {
+              "id": "b",
+              "text": "Decorar la caja"
+            },
+            {
+              "id": "c",
+              "text": "Reemplazar el conteo"
+            }
+          ],
+          "correct": "a"
+        },
+        {
+          "id": "q3",
+          "prompt": "Mientras espera el despacho, la flor va…",
+          "options": [
+            {
+              "id": "a",
+              "text": "Al andén"
+            },
+            {
+              "id": "b",
+              "text": "Encima de otra caja, al sol"
+            },
+            {
+              "id": "c",
+              "text": "Al cuarto frío"
             }
           ],
           "correct": "c"
+        },
+        {
+          "id": "q4",
+          "prompt": "Una caja que gotea por dentro…",
+          "options": [
+            {
+              "id": "a",
+              "text": "Se corrige antes de cerrar"
+            },
+            {
+              "id": "b",
+              "text": "Se manda igual si ya está tarde"
+            },
+            {
+              "id": "c",
+              "text": "Se esconde abajo del pedido"
+            }
+          ],
+          "correct": "a"
         }
       ]
     },
     {
       "id": "primeros-auxilios",
-      "title": "Si alguien se corta",
-      "summary": "El botiquín del taller, a quién avisar y qué no se improvisa.",
+      "title": "Cuidarte en el cultivo",
+      "summary": "Tijera, cuchillo y botiquín. Un corte, aunque sea pequeño, se lava, se cubre y se avisa.",
       "category": "Seguridad",
       "minutes": 18,
-      "level": "Base",
-      "image": "https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=1200&q=80",
-      "gallery": [],
+      "level": "Paso 6",
+      "image": "/flores/cosecha-amarilla.jpg",
+      "gallery": [
+        {
+          "image": "/flores/cosecha-amarilla.jpg",
+          "caption": "Herramienta en la cosecha"
+        },
+        {
+          "image": "/flores/equipo-campo.jpg",
+          "caption": "El equipo en campo"
+        }
+      ],
       "lessons": [
         {
           "id": "botiquin",
@@ -408,7 +670,7 @@
         },
         {
           "id": "corte",
-          "title": "Un corte pequeño en el mesón",
+          "title": "Un corte en la cama o en el mesón",
           "minutes": 7,
           "kind": "video"
         },
@@ -421,23 +683,61 @@
       ],
       "quiz": [
         {
-          "id": "p1",
-          "prompt": "Después de un corte, aunque sea pequeño…",
+          "id": "q1",
+          "prompt": "El botiquín se busca…",
           "options": [
             {
               "id": "a",
-              "text": "Se lava, se cubre y se avisa a quien coordina el turno"
+              "text": "Cuando ya duele, preguntando por todo el cultivo"
             },
             {
               "id": "b",
-              "text": "Se sigue armando para no retrasar el pedido"
+              "text": "Al llegar, antes de necesitarlo"
             },
             {
               "id": "c",
-              "text": "Se esconde la tijera para que nadie pregunte"
+              "text": "Solo si el corte es grande"
+            }
+          ],
+          "correct": "b"
+        },
+        {
+          "id": "q2",
+          "prompt": "Un corte pequeño se cubre con…",
+          "options": [
+            {
+              "id": "a",
+              "text": "Gasa, después de lavarlo"
+            },
+            {
+              "id": "b",
+              "text": "El paño que se usa en las flores"
+            },
+            {
+              "id": "c",
+              "text": "La mano, para no parar el corte"
             }
           ],
           "correct": "a"
+        },
+        {
+          "id": "q3",
+          "prompt": "Después de cubrir el corte…",
+          "options": [
+            {
+              "id": "a",
+              "text": "Se sigue cortando si el pedido urge"
+            },
+            {
+              "id": "b",
+              "text": "No se dice nada para no preocupar"
+            },
+            {
+              "id": "c",
+              "text": "Se avisa y se anota la hora"
+            }
+          ],
+          "correct": "c"
         }
       ]
     }
@@ -490,6 +790,14 @@
       "shift": "Tarde",
       "focus": "Higiene y agua del taller",
       "progress": 33
+    },
+    {
+      "id": "alejandro",
+      "name": "Alejandro",
+      "role": "Trabajador",
+      "shift": "Mañana",
+      "focus": "Recién llegado",
+      "progress": 0
     }
   ],
   "progress": {
@@ -507,5 +815,33 @@
     "username": "admin",
     "name": "Administrador",
     "passwordHash": "8d9cc7e2af6519c8f631d0f55fea9974:bb6d05fd32b66bcf6efb393c2a4e520274ce435f0be511a9529cfe2a1ebb5adc"
-  }
+  },
+  "workers": [
+    {
+      "id": "alejandro",
+      "name": "Alejandro",
+      "passwordHash": "71099fc075e05f31ece3334d9cecbb53:6e7564288c5f5eac6095cc70b4a86e5274ae15b2dbd3167f83f281c2679e7891",
+      "role": "Trabajador",
+      "shift": "Mañana",
+      "focus": "Recién llegado",
+      "progress": 0,
+      "completedLessons": [],
+      "attempts": [],
+      "continueCourseId": "preparacion-segura"
+    }
+  ],
+  "admins": [
+    {
+      "id": "camilo",
+      "name": "Camilo Tobón",
+      "username": "camilo",
+      "passwordHash": "ccecbf3a110b5eb19a5e7d45c5aab2e3:dd26544d7c768e71c7653f00d7712256f8c9b4dc6907eca19aafc10db5a91b30"
+    },
+    {
+      "id": "emiliano",
+      "name": "Emiliano Castañeda",
+      "username": "emiliano",
+      "passwordHash": "545da26a40f85c7460914471ddd959a5:356d06680aa172b1c529f8ac3f1399237a83d851189b99c4312e80bd49d5dd2b"
+    }
+  ]
 }
