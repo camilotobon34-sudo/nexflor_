@@ -1,11 +1,14 @@
 import express from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 import * as store from "./store.js";
 import { ensureAdmin, loginAdmin, loginWorker, registerWorker, readSession, verifyAdmin } from "./auth.js";
 import * as admin from "./admin.js";
 
 const app = express();
 const port = process.env.PORT || 4000;
+const frontendDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../frontend/dist");
 
 ensureAdmin();
 
@@ -164,11 +167,23 @@ app.use("/api", (_req, res) => {
   res.status(404).json({ message: "Esa ruta no existe." });
 });
 
+app.use(express.static(frontendDir));
+app.use((req, res, next) => {
+  if (req.method !== "GET" || req.path.startsWith("/api")) return next();
+  res.sendFile(path.join(frontendDir, "index.html"), (error) => {
+    if (error) next();
+  });
+});
+
 app.use((error, _req, res, _next) => {
   if (res.headersSent) return;
   res.status(error.status || 500).json({ message: error.message || "No se pudo guardar." });
 });
 
-app.listen(port, () => {
-  console.log(`API en http://localhost:${port}`);
-});
+export default app;
+
+if (!process.env.VERCEL) {
+  app.listen(port, () => {
+    console.log(`API en http://localhost:${port}`);
+  });
+}

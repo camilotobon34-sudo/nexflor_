@@ -1,7 +1,7 @@
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import { readDb, writeDb } from "./store.js";
 
-const SECRET = "serrania-admin-local";
+const SECRET = process.env.SESSION_SECRET || "serrania-admin-local";
 const SESSION = 8 * 60 * 60 * 1000;
 const LOCK_MS = 2 * 60 * 1000;
 const MAX_TRIES = 5;

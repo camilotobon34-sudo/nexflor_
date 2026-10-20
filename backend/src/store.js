@@ -3,14 +3,21 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { enrich } from "./teach.js";
 
-const file = path.join(path.dirname(fileURLToPath(import.meta.url)), "../data/db.json");
+const bundled = path.join(path.dirname(fileURLToPath(import.meta.url)), "../data/db.json");
+
+function dataFile() {
+  if (!process.env.VERCEL) return bundled;
+  const copy = path.join("/tmp", "nexflor-db.json");
+  if (!fs.existsSync(copy)) fs.copyFileSync(bundled, copy);
+  return copy;
+}
 
 function read() {
-  return JSON.parse(fs.readFileSync(file, "utf8"));
+  return JSON.parse(fs.readFileSync(dataFile(), "utf8"));
 }
 
 function write(data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+  fs.writeFileSync(dataFile(), JSON.stringify(data, null, 2));
 }
 
 export function readDb() {
