@@ -1,0 +1,511 @@
+{
+  "user": {
+    "id": "laura",
+    "name": "Laura",
+    "fullName": "Laura Méndez",
+    "role": "Coordinadora de taller",
+    "initials": "LM",
+    "continueCourseId": "preparacion-segura"
+  },
+  "courses": [
+    {
+      "id": "preparacion-segura",
+      "title": "Preparación segura de arreglos florales",
+      "summary": "Cómo armar un ramo sin cortes, químicos mal usados ni posturas que duelan al día siguiente.",
+      "category": "Seguridad",
+      "minutes": 42,
+      "level": "Base",
+      "image": "https://images.unsplash.com/photo-1487530811176-3780de880c2d?auto=format&fit=crop&w=1200&q=80",
+      "gallery": [
+        {
+          "image": "https://images.unsplash.com/photo-1468327768560-75b778cbb551?auto=format&fit=crop&w=900&q=80",
+          "caption": "Mesa de corte despejada"
+        },
+        {
+          "image": "https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&w=900&q=80",
+          "caption": "Armado del ramo en pareja"
+        }
+      ],
+      "lessons": [
+        {
+          "id": "puesto",
+          "title": "Reconocer el puesto antes de empezar",
+          "minutes": 8,
+          "kind": "video"
+        },
+        {
+          "id": "filo",
+          "title": "Tijeras, cuchillo y el sentido del corte",
+          "minutes": 7,
+          "kind": "video"
+        },
+        {
+          "id": "espinas",
+          "title": "Espinas, tallos duros y alambre",
+          "minutes": 6,
+          "kind": "practica"
+        },
+        {
+          "id": "quimicos",
+          "title": "Agua, conservante y qué no se mezcla",
+          "minutes": 8,
+          "kind": "lectura"
+        },
+        {
+          "id": "postura",
+          "title": "Postura en la mesa y pausas",
+          "minutes": 6,
+          "kind": "video"
+        },
+        {
+          "id": "cierre",
+          "title": "Cierre del turno y residuos",
+          "minutes": 7,
+          "kind": "practica"
+        }
+      ],
+      "quiz": [
+        {
+          "id": "q1",
+          "prompt": "Antes de cortar el primer tallo, ¿qué revisas en la mesa?",
+          "options": [
+            {
+              "id": "a",
+              "text": "Que el ramo del pedido anterior siga ahí, para copiarlo rápido"
+            },
+            {
+              "id": "b",
+              "text": "Que la mesa esté despejada, seca y con las herramientas en su sitio"
+            },
+            {
+              "id": "c",
+              "text": "Solo el color de las flores; el orden se deja para el cierre"
+            }
+          ],
+          "correct": "b"
+        },
+        {
+          "id": "q2",
+          "prompt": "Una tijera de taller se guarda…",
+          "options": [
+            {
+              "id": "a",
+              "text": "Abierta, para tenerla lista en el siguiente pedido"
+            },
+            {
+              "id": "b",
+              "text": "En el bolsillo del delantal mientras atiendes"
+            },
+            {
+              "id": "c",
+              "text": "Cerrada, limpia y en el cajón o el gancho marcado"
+            }
+          ],
+          "correct": "c"
+        },
+        {
+          "id": "q3",
+          "prompt": "El conservante de las flores se mezcla…",
+          "options": [
+            {
+              "id": "a",
+              "text": "Con la dosis del envase, en agua limpia, sin agregar otros productos"
+            },
+            {
+              "id": "b",
+              "text": "Con cloro, para que el agua dure más días"
+            },
+            {
+              "id": "c",
+              "text": "A ojo, hasta que el agua huela fuerte"
+            }
+          ],
+          "correct": "a"
+        },
+        {
+          "id": "q4",
+          "prompt": "Si llevas más de una hora de pie armando ramos, lo que toca es…",
+          "options": [
+            {
+              "id": "a",
+              "text": "Seguir hasta terminar el pedido, aunque duela la espalda"
+            },
+            {
+              "id": "b",
+              "text": "Bajar los hombros, cambiar el peso y hacer una pausa corta"
+            },
+            {
+              "id": "c",
+              "text": "Sentarte sobre la mesa de corte para descansar las piernas"
+            }
+          ],
+          "correct": "b"
+        }
+      ]
+    },
+    {
+      "id": "herramientas",
+      "title": "Herramientas del mesón",
+      "summary": "Qué se usa para cada tallo y cómo se entrega el puesto al siguiente turno.",
+      "category": "Taller",
+      "minutes": 28,
+      "level": "Base",
+      "image": "https://images.unsplash.com/photo-1455659817273-f96807779a8a?auto=format&fit=crop&w=1200&q=80",
+      "gallery": [],
+      "lessons": [
+        {
+          "id": "mapa",
+          "title": "Mapa del mesón",
+          "minutes": 6,
+          "kind": "lectura"
+        },
+        {
+          "id": "afilado",
+          "title": "Cuándo una hoja ya no corta bien",
+          "minutes": 8,
+          "kind": "video"
+        },
+        {
+          "id": "entrega",
+          "title": "Entregar el puesto",
+          "minutes": 7,
+          "kind": "practica"
+        },
+        {
+          "id": "reporte",
+          "title": "Anotar una herramienta dañada",
+          "minutes": 7,
+          "kind": "practica"
+        }
+      ],
+      "quiz": [
+        {
+          "id": "h1",
+          "prompt": "Una tijera que aplasta el tallo en vez de cortarlo…",
+          "options": [
+            {
+              "id": "a",
+              "text": "Se sigue usando: el ramo se ve igual"
+            },
+            {
+              "id": "b",
+              "text": "Se aparta y se reporta para afilar o cambiar"
+            },
+            {
+              "id": "c",
+              "text": "Se presta al reparto para abrir cajas"
+            }
+          ],
+          "correct": "b"
+        },
+        {
+          "id": "h2",
+          "prompt": "Al cerrar el turno, las herramientas quedan…",
+          "options": [
+            {
+              "id": "a",
+              "text": "Donde se usaron por última vez"
+            },
+            {
+              "id": "b",
+              "text": "Limpias, cerradas y en el lugar marcado"
+            },
+            {
+              "id": "c",
+              "text": "Dentro del balde de las flores, para no perderlas"
+            }
+          ],
+          "correct": "b"
+        }
+      ]
+    },
+    {
+      "id": "atencion",
+      "title": "Atención en el local",
+      "summary": "Recibir un pedido, repetir los datos y no prometer lo que la cámara no tiene.",
+      "category": "Atención",
+      "minutes": 35,
+      "level": "Intermedio",
+      "image": "https://images.unsplash.com/photo-1525310072745-f49212b5ac6d?auto=format&fit=crop&w=1200&q=80",
+      "gallery": [],
+      "lessons": [
+        {
+          "id": "saludo",
+          "title": "El saludo y la primera pregunta",
+          "minutes": 8,
+          "kind": "video"
+        },
+        {
+          "id": "pedido",
+          "title": "Anotar fecha, color y presupuesto",
+          "minutes": 9,
+          "kind": "practica"
+        },
+        {
+          "id": "faltante",
+          "title": "Qué decir si falta una flor",
+          "minutes": 8,
+          "kind": "lectura"
+        },
+        {
+          "id": "cierre-venta",
+          "title": "Confirmar el pedido en voz alta",
+          "minutes": 10,
+          "kind": "practica"
+        }
+      ],
+      "quiz": [
+        {
+          "id": "a1",
+          "prompt": "Si el cliente pide una flor que no está en cámara, tú…",
+          "options": [
+            {
+              "id": "a",
+              "text": "La prometes y después ves cómo se consigue"
+            },
+            {
+              "id": "b",
+              "text": "Dices qué hay hoy y ofreces una alternativa parecida"
+            },
+            {
+              "id": "c",
+              "text": "Cierras la venta sin mencionar el cambio"
+            }
+          ],
+          "correct": "b"
+        }
+      ]
+    },
+    {
+      "id": "higiene",
+      "title": "Higiene y agua del taller",
+      "summary": "Baldes, paños y el agua que no se reutiliza de un día para otro.",
+      "category": "Seguridad",
+      "minutes": 24,
+      "level": "Base",
+      "image": "https://images.unsplash.com/photo-1496062031456-07b8f162a322?auto=format&fit=crop&w=1200&q=80",
+      "gallery": [],
+      "lessons": [
+        {
+          "id": "baldes",
+          "title": "Baldes limpios al empezar",
+          "minutes": 6,
+          "kind": "practica"
+        },
+        {
+          "id": "agua",
+          "title": "Cambiar el agua, no solo rellenarla",
+          "minutes": 8,
+          "kind": "video"
+        },
+        {
+          "id": "panos",
+          "title": "Paños de mesa y paños de piso",
+          "minutes": 5,
+          "kind": "lectura"
+        },
+        {
+          "id": "manos",
+          "title": "Manos antes de tocar envoltura",
+          "minutes": 5,
+          "kind": "practica"
+        }
+      ],
+      "quiz": [
+        {
+          "id": "g1",
+          "prompt": "El agua de los baldes del lunes…",
+          "options": [
+            {
+              "id": "a",
+              "text": "Sirve el martes si las flores siguen frescas"
+            },
+            {
+              "id": "b",
+              "text": "Se cambia; no se reutiliza para el día siguiente"
+            },
+            {
+              "id": "c",
+              "text": "Se mezcla con conservante nuevo y se deja"
+            }
+          ],
+          "correct": "b"
+        }
+      ]
+    },
+    {
+      "id": "empaque",
+      "title": "Empaque y entrega",
+      "summary": "Que el ramo salga firme, con tarjeta legible y sin agua en el vehículo.",
+      "category": "Taller",
+      "minutes": 30,
+      "level": "Intermedio",
+      "image": "https://images.unsplash.com/photo-1563241527-3004b7be0ffd?auto=format&fit=crop&w=1200&q=80",
+      "gallery": [],
+      "lessons": [
+        {
+          "id": "base",
+          "title": "La base que no se abre en el camino",
+          "minutes": 8,
+          "kind": "video"
+        },
+        {
+          "id": "tarjeta",
+          "title": "Tarjeta, nombre y hora",
+          "minutes": 7,
+          "kind": "practica"
+        },
+        {
+          "id": "ruta",
+          "title": "Cómo se carga la caja en el reparto",
+          "minutes": 8,
+          "kind": "lectura"
+        },
+        {
+          "id": "novedad",
+          "title": "Si el ramo se mueve, se repara antes de salir",
+          "minutes": 7,
+          "kind": "practica"
+        }
+      ],
+      "quiz": [
+        {
+          "id": "e1",
+          "prompt": "Un ramo que gotea se sube a la moto…",
+          "options": [
+            {
+              "id": "a",
+              "text": "Igual: en el camino se seca"
+            },
+            {
+              "id": "b",
+              "text": "Solo si el cliente vive cerca"
+            },
+            {
+              "id": "c",
+              "text": "No. Se seca la base y se revisa el empaque antes de salir"
+            }
+          ],
+          "correct": "c"
+        }
+      ]
+    },
+    {
+      "id": "primeros-auxilios",
+      "title": "Si alguien se corta",
+      "summary": "El botiquín del taller, a quién avisar y qué no se improvisa.",
+      "category": "Seguridad",
+      "minutes": 18,
+      "level": "Base",
+      "image": "https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=1200&q=80",
+      "gallery": [],
+      "lessons": [
+        {
+          "id": "botiquin",
+          "title": "Dónde está el botiquín",
+          "minutes": 5,
+          "kind": "lectura"
+        },
+        {
+          "id": "corte",
+          "title": "Un corte pequeño en el mesón",
+          "minutes": 7,
+          "kind": "video"
+        },
+        {
+          "id": "aviso",
+          "title": "Avisar y dejar constancia",
+          "minutes": 6,
+          "kind": "practica"
+        }
+      ],
+      "quiz": [
+        {
+          "id": "p1",
+          "prompt": "Después de un corte, aunque sea pequeño…",
+          "options": [
+            {
+              "id": "a",
+              "text": "Se lava, se cubre y se avisa a quien coordina el turno"
+            },
+            {
+              "id": "b",
+              "text": "Se sigue armando para no retrasar el pedido"
+            },
+            {
+              "id": "c",
+              "text": "Se esconde la tijera para que nadie pregunte"
+            }
+          ],
+          "correct": "a"
+        }
+      ]
+    }
+  ],
+  "team": [
+    {
+      "id": "laura",
+      "name": "Laura Méndez",
+      "role": "Coordinadora",
+      "shift": "Mañana",
+      "focus": "Preparación segura",
+      "progress": 24
+    },
+    {
+      "id": "andres",
+      "name": "Andrés Ruiz",
+      "role": "Florista",
+      "shift": "Mañana",
+      "focus": "Herramientas del mesón",
+      "progress": 75
+    },
+    {
+      "id": "camila",
+      "name": "Camila Ortiz",
+      "role": "Florista",
+      "shift": "Tarde",
+      "focus": "Empaque y entrega",
+      "progress": 50
+    },
+    {
+      "id": "mateo",
+      "name": "Mateo Gil",
+      "role": "Reparto",
+      "shift": "Tarde",
+      "focus": "Empaque y entrega",
+      "progress": 25
+    },
+    {
+      "id": "sofia",
+      "name": "Sofía Navarro",
+      "role": "Atención",
+      "shift": "Mañana",
+      "focus": "Atención en el local",
+      "progress": 100
+    },
+    {
+      "id": "julian",
+      "name": "Julián Paz",
+      "role": "Aprendiz",
+      "shift": "Tarde",
+      "focus": "Higiene y agua del taller",
+      "progress": 33
+    }
+  ],
+  "progress": {
+    "completedLessons": [
+      "preparacion-segura:puesto",
+      "preparacion-segura:filo",
+      "preparacion-segura:espinas",
+      "preparacion-segura:quimicos",
+      "higiene:baldes",
+      "higiene:agua"
+    ],
+    "attempts": []
+  },
+  "admin": {
+    "username": "admin",
+    "name": "Administrador",
+    "passwordHash": "8d9cc7e2af6519c8f631d0f55fea9974:bb6d05fd32b66bcf6efb393c2a4e520274ce435f0be511a9529cfe2a1ebb5adc"
+  }
+}

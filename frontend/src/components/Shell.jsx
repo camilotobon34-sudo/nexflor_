@@ -1,0 +1,117 @@
+import { NavLink, Outlet } from "react-router-dom";
+import { useApi } from "../api.js";
+
+const links = [
+  { to: "/", label: "Inicio", end: true, icon: HomeIcon },
+  { to: "/cursos", label: "Cursos", icon: BookIcon },
+  { to: "/practica/preparacion-segura", label: "Práctica", icon: CheckIcon },
+  { to: "/equipo", label: "Equipo", icon: PeopleIcon },
+  { to: "/progreso", label: "Progreso", icon: ChartIcon },
+];
+
+export default function Shell() {
+  const me = useApi("/me");
+  const formatted = new Intl.DateTimeFormat("es-CO", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(new Date());
+  const today = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+
+  return (
+    <div className="app">
+      <aside className="sidebar">
+        <div className="brand">
+          <span className="mark">S</span>
+          <div>
+            <strong>Serranía</strong>
+            <small>Taller floral</small>
+          </div>
+        </div>
+        <nav>
+          {links.map((link) => (
+            <NavLink key={link.to} to={link.to} end={link.end} className={({ isActive }) => (isActive ? "active" : "")}>
+              <link.icon />
+              {link.label}
+            </NavLink>
+          ))}
+        </nav>
+        <NavLink to="/admin" className="admin-link">Administrar</NavLink>
+        <div className="side-card">
+          <p>Turno de hoy</p>
+          <strong>{me.data?.fullName || "Laura Méndez"}</strong>
+          <span>{me.data?.role || "Coordinadora de taller"}</span>
+        </div>
+      </aside>
+      <div className="main">
+        <header className="topbar">
+          <p>{today}</p>
+          <NavLink to="/admin" className="admin-link top-admin">Administrar</NavLink>
+          <div className="who">
+            <span>{me.data?.initials || "LM"}</span>
+            <div>
+              <strong>{me.data?.fullName || "Laura Méndez"}</strong>
+              <small>{me.data?.role || "Coordinadora"}</small>
+            </div>
+          </div>
+        </header>
+        <Outlet />
+      </div>
+      <nav className="tabbar">
+        {links.map((link) => (
+          <NavLink key={link.to} to={link.to} end={link.end}>
+            <link.icon />
+            {link.label}
+          </NavLink>
+        ))}
+      </nav>
+    </div>
+  );
+}
+
+export function Status({ loading, error, children }) {
+  if (loading) return <p className="status">Cargando el taller…</p>;
+  if (error) return <p className="status error">{error}. Revisa que la API esté en el puerto 4000.</p>;
+  return children;
+}
+
+function HomeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z" />
+    </svg>
+  );
+}
+function BookIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 4.5h9.5A3.5 3.5 0 0 1 18 8v12H8.5A3.5 3.5 0 0 0 5 16.5z" />
+      <path d="M5 4.5A3.5 3.5 0 0 1 8.5 8H18" />
+    </svg>
+  );
+}
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="4" y="3" width="16" height="18" rx="2" />
+      <path d="m8 12 2.5 2.5L16 9" />
+    </svg>
+  );
+}
+function PeopleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="9" cy="9" r="3" />
+      <path d="M4.5 19c.6-2.4 2.4-3.5 4.5-3.5s3.9 1.1 4.5 3.5" />
+      <circle cx="17" cy="9.5" r="2.2" />
+      <path d="M16 15.6c1.4.3 2.5 1.2 3.1 3" />
+    </svg>
+  );
+}
+function ChartIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 19V9M10 19V5M15 19v-7M20 19V8" />
+    </svg>
+  );
+}
