@@ -34,6 +34,8 @@ export default function App() {
         <Route path="practica/:id" element={<Practice />} />
         <Route path="equipo" element={<Team />} />
         <Route path="progreso" element={<Progress />} />
+        <Route path="ingreso" element={<Face />} />
+        <Route path="entrar" element={<Face />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

@@ -3,3 +3,5 @@ dist
 .design
 .env
 backend/uploads
+backend/data/face.key
+.vercel
