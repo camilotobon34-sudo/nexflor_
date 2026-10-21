@@ -102,14 +102,14 @@ function Login({ onToken }) {
   return (
     <main className="login">
       <form className="card" onSubmit={submit}>
-        <p className="eyebrow">Serranía</p>
+        <img className="login-logo" src="/logo-trigal.png" alt="Flores El Trigal" />
         <h1>Administración</h1>
-        <p className="lede">Hace falta la contraseña. Sin ella no se abre el panel.</p>
-        <label>Usuario<input value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" /></label>
+        <p className="lede">Entra con tu nombre. Camilo Tobón o Emiliano Castañeda.</p>
+        <label>Nombre<input value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" /></label>
         <label>Contraseña<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" /></label>
         {error && <p className="status error">{error}</p>}
         <button className="button" type="submit" disabled={busy}>{busy ? "Entrando…" : "Entrar"}</button>
-        <Link to="/">Volver al taller</Link>
+        <Link to="/entrar">Entrar como trabajador</Link>
       </form>
     </main>
   );

@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch src/server.js",
-    "start": "node src/server.js"
+    "start": "node --env-file-if-exists=../.env src/server.js"
   },
   "dependencies": {
     "@tensorflow/tfjs": "^4.22.0",

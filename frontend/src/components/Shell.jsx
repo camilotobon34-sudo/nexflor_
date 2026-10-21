@@ -1,6 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { useApi } from "../api.js";
-import { clearSession, readSession } from "../session.js";
+import { useApi, WORKER_KEY } from "../api.js";
 
 const links = [
   { to: "/", label: "Inicio", end: true, icon: HomeIcon },
@@ -13,14 +12,13 @@ const links = [
 
 export default function Shell() {
   const me = useApi("/me");
-  const session = readSession();
   const navigate = useNavigate();
-  const fullName = me.data?.fullName || session.name || "Trabajador";
-  const job = me.data?.role || session.job || "Trabajador";
+  const fullName = me.data?.fullName || "Trabajador";
+  const job = me.data?.role || "Trabajador";
   const initials = me.data?.initials || fullName.split(/\s+/).slice(0, 2).map((part) => part[0] || "").join("").toUpperCase();
 
-  function logout() {
-    clearSession();
+  function leave() {
+    sessionStorage.removeItem(WORKER_KEY);
     navigate("/entrar");
   }
   const formatted = new Intl.DateTimeFormat("es-CO", {
@@ -34,11 +32,7 @@ export default function Shell() {
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
-          <span className="mark">S</span>
-          <div>
-            <strong>Nexflor</strong>
-            <small>Flores El Trigal</small>
-          </div>
+          <img className="brand-logo" src="/logo-trigal.png" alt="Flores El Trigal" />
         </div>
         <nav>
           {links.map((link) => (
@@ -48,8 +42,8 @@ export default function Shell() {
             </NavLink>
           ))}
         </nav>
-        {session.role === "admin" && <NavLink to="/admin" className="admin-link">Administrar</NavLink>}
-        <button type="button" className="admin-link" onClick={logout}>Salir</button>
+        <NavLink to="/admin" className="admin-link">Administrar</NavLink>
+        <button type="button" className="admin-link" onClick={leave}>Salir</button>
         <div className="side-card">
           <p>Turno de hoy</p>
           <strong>{fullName}</strong>
@@ -58,8 +52,10 @@ export default function Shell() {
       </aside>
       <div className="main">
         <header className="topbar">
+          <img className="top-logo" src="/logo-trigal.png" alt="Flores El Trigal" />
           <p>{today}</p>
-          {session.role === "admin" && <NavLink to="/admin" className="admin-link top-admin">Administrar</NavLink>}
+          <NavLink to="/admin" className="admin-link top-admin">Administrar</NavLink>
+          <button type="button" className="text-link" onClick={leave}>Salir</button>
           <div className="who">
             <span>{initials}</span>
             <div>

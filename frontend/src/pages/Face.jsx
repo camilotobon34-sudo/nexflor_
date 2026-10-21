@@ -1,32 +1,22 @@
 import { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { api } from "../api.js";
+import { api, workerToken, WORKER_KEY } from "../api.js";
 import { measureVideo, prepareModels } from "../browserFace.js";
-import { clearSession, readSession } from "../session.js";
 
 const emptyForm = { fullName: "", documentId: "", role: "", email: "" };
 
 export default function Face() {
-  const session = readSession();
+  const token = workerToken();
   const navigate = useNavigate();
 
-  if (!session.token) return <Navigate to="/entrar" replace />;
+  if (!token) return <Navigate to="/entrar" replace />;
 
   function logout() {
-    clearSession();
+    sessionStorage.removeItem(WORKER_KEY);
     navigate("/entrar");
   }
 
-  return (
-    <Scanner
-      token={session.token}
-      name={session.name}
-      documentId={session.documentId}
-      job={session.job}
-      ownAccount={session.role === "trabajador"}
-      onLogout={logout}
-    />
-  );
+  return <Scanner token={token} ownAccount onLogout={logout} />;
 }
 
 function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
@@ -62,9 +52,19 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
 
   useEffect(() => {
     staffApi("/face/status").then(setStatus).catch((err) => {
-      if (err.message.includes("cuenta autorizada")) onLogout();
+      if (err.message.includes("cuenta")) onLogout();
       else setError(err.message);
     });
+    if (ownAccount) {
+      staffApi("/me").then((me) => {
+        setForm((current) => ({
+          ...current,
+          fullName: me.fullName || current.fullName,
+          documentId: me.id || current.documentId,
+          role: me.role || current.role || "Trabajador",
+        }));
+      }).catch(() => {});
+    }
     refreshEntries();
     return () => stopCamera();
   }, [token]);

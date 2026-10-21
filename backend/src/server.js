@@ -1,13 +1,16 @@
 import express from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 import * as store from "./store.js";
-import { createStaff, ensureAdmin, ensureStaff, getWorker, linkWorkerFace, listStaff, loginAdmin, loginWorker, registerWorker, setStaffActive, verifySession } from "./auth.js";
+import { createStaff, ensureAdmin, ensureStaff, getWorkerById, linkWorkerFace, listStaff, loginAdmin, loginWorker, readSession, registerWorker, setStaffActive } from "./auth.js";
 import * as admin from "./admin.js";
 import * as face from "./faceStore.js";
 import { analyzeFrames, engineStatus, startEngine } from "./faceEngine.js";
 
 const app = express();
 const port = process.env.PORT || 4000;
+const frontendDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../frontend/dist");
 
 ensureAdmin();
 ensureStaff();
@@ -18,38 +21,82 @@ app.use(cors());
 app.use(express.json({ limit: "6mb" }));
 app.use("/api/uploads", express.static(admin.uploadsDir));
 
-function readSession(req) {
-  const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "").trim();
-  return verifySession(token);
+function tokenOf(req) {
+  return String(req.headers.authorization || "").replace(/^Bearer\s+/i, "").trim();
 }
 
 function requireAdmin(req, res, next) {
-  const session = readSession(req);
+  const session = readSession(tokenOf(req));
   if (session?.role !== "admin") return res.status(401).json({ message: "Entra como administrador." });
-  req.session = session;
+  req.session = { role: "admin", username: session.id };
   next();
 }
 
-function requireStaff(req, res, next) {
-  const session = readSession(req);
-  if (!session) return res.status(401).json({ message: "Entra con tu cuenta de trabajador." });
-  req.session = session;
-  next();
+function workerId(req) {
+  const session = readSession(tokenOf(req));
+  return session?.role === "worker" ? session.id : null;
+}
+
+function requireActor(req, res) {
+  const session = readSession(tokenOf(req));
+  if (!session) {
+    res.status(401).json({ message: "Entra con tu cuenta de trabajador." });
+    return null;
+  }
+  req.session = { role: session.role, username: session.id };
+  return session;
+}
+
+function clientReading(body) {
+  const descriptor = body?.descriptor;
+  if (!Array.isArray(descriptor) || descriptor.length !== 128 || descriptor.some((value) => !Number.isFinite(value))) {
+    const error = new Error("No llegó una medición válida del rostro.");
+    error.status = 400;
+    throw error;
+  }
+  return {
+    descriptor,
+    liveness: body?.liveness === true,
+    quality: body?.quality !== false,
+    staticImage: body?.staticImage === true,
+  };
 }
 
 app.post("/api/workers/register", (req, res) => {
-  try { res.json(registerWorker(req.body || {})); }
-  catch (error) { res.status(error.status || 500).json({ message: error.message || "No se pudo crear la cuenta." }); }
+  try {
+    res.status(201).json(registerWorker(req.body?.name, req.body?.password, req.body?.shift));
+  } catch (error) {
+    res.status(error.status || 400).json({ message: error.message || "No se pudo crear la cuenta." });
+  }
 });
 
 app.post("/api/workers/login", (req, res) => {
-  try { res.json(loginWorker(req.body?.documentId, req.body?.password)); }
-  catch (error) { res.status(error.status || 500).json({ message: error.message || "No se pudo entrar." }); }
+  try {
+    res.json(loginWorker(String(req.body?.name || ""), String(req.body?.password || "")));
+  } catch (error) {
+    res.status(error.status || 500).json({ message: error.message || "No se pudo entrar." });
+  }
 });
 
 app.post("/api/admin/login", (req, res) => {
   try {
     res.json(loginAdmin(String(req.body?.username || "").trim(), String(req.body?.password || "")));
+  } catch (error) {
+    res.status(error.status || 500).json({ message: error.message || "No se pudo entrar." });
+  }
+});
+
+app.post("/api/workers/register", (req, res) => {
+  try {
+    res.status(201).json(registerWorker(req.body?.name, req.body?.password, req.body?.shift));
+  } catch (error) {
+    res.status(error.status || 400).json({ message: error.message || "No se pudo crear la cuenta." });
+  }
+});
+
+app.post("/api/workers/login", (req, res) => {
+  try {
+    res.json(loginWorker(String(req.body?.name || ""), String(req.body?.password || "")));
   } catch (error) {
     res.status(error.status || 500).json({ message: error.message || "No se pudo entrar." });
   }
@@ -190,38 +237,31 @@ app.get("/api/health", (_req, res) => {
   res.json(store.health());
 });
 
-function clientReading(body) {
-  const descriptor = body?.descriptor;
-  const valid = Array.isArray(descriptor)
-    && descriptor.length === 128
-    && descriptor.every((value) => typeof value === "number" && Number.isFinite(value));
-  return {
-    descriptor: valid ? descriptor : null,
-    liveness: body?.liveness === true,
-    quality: body?.quality === true && valid,
-    staticImage: body?.staticImage === true,
-  };
-}
+app.get("/api/me", (req, res) => {
+  res.json(store.me(workerId(req)));
+});
 
-app.get("/api/face/status", requireStaff, (_req, res) => {
-  const status = engineStatus();
+app.get("/api/face/status", (req, res) => {
+  if (!requireActor(req, res)) return;
+  const engine = engineStatus();
   res.json({
-    ...face.summary(),
-    engine: status.ready ? "server" : "browser",
-    modelReady: status.ready,
-    notice: status.ready
-      ? status.message
-      : "TensorFlow nativo no está instalado en este servidor. El navegador mide el rostro y el servidor decide si entra. No es una garantía contra alguien que reenvíe una plantilla.",
+    engine: engine.ready ? "server" : "browser",
+    modelReady: true,
+    notice: engine.ready
+      ? engine.message
+      : "El navegador mide el rostro y el servidor decide el ingreso. Detectar un rostro no significa que ya esté identificado.",
     consent: face.CONSENT_TEXT,
   });
 });
 
-app.get("/api/face/today", requireStaff, (req, res) => {
+app.get("/api/face/today", (req, res) => {
+  const session = requireActor(req, res);
+  if (!session) return;
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(new Date());
-  const worker = req.session.role === "trabajador" ? getWorker(req.session.username) : null;
+  const worker = session.role === "worker" ? getWorkerById(session.id) : null;
   res.json(face.history({ date: today })
     .filter((event) => event.access === "permitido")
-    .filter((event) => !worker || event.personId === worker.facePersonId || String(event.documentId || "").toLowerCase() === worker.documentId.toLowerCase())
+    .filter((event) => !worker || event.personId === worker.facePersonId || event.documentId === worker.id)
     .map((event) => ({
       id: event.id,
       at: event.at,
@@ -231,81 +271,76 @@ app.get("/api/face/today", requireStaff, (req, res) => {
     })));
 });
 
-app.post("/api/face/verify", requireStaff, async (req, res, next) => {
+app.post("/api/face/verify", async (req, res, next) => {
   try {
+    const session = requireActor(req, res);
+    if (!session) return;
     const status = engineStatus();
     const reading = status.ready ? await analyzeFrames(req.body?.frames) : clientReading(req.body);
-    res.json(face.verifyFace(reading, req.session.username));
+    res.json(face.verifyFace(reading, session.id));
   } catch (error) { next(error); }
 });
 
-app.post("/api/face/register", requireStaff, async (req, res, next) => {
+app.post("/api/face/register", async (req, res, next) => {
   try {
+    const session = requireActor(req, res);
+    if (!session) return;
     const status = engineStatus();
     const reading = status.ready ? await analyzeFrames(req.body?.frames) : clientReading(req.body);
-    const worker = req.session.role === "trabajador" ? getWorker(req.session.username) : null;
+    const worker = session.role === "worker" ? getWorkerById(session.id) : null;
     const result = face.registerPerson({
-      fullName: worker?.fullName || req.body?.fullName,
-      documentId: worker?.documentId || req.body?.documentId,
-      role: req.body?.role || worker?.role,
+      fullName: worker?.name || req.body?.fullName,
+      documentId: worker?.id || req.body?.documentId,
+      role: req.body?.role || worker?.role || "Trabajador",
       email: req.body?.email,
       consent: req.body?.consent,
       descriptor: reading.descriptor,
       liveness: reading.liveness,
       quality: reading.quality,
       workerId: worker?.id || "",
-    }, req.session.username);
-    if (worker && result.person?.id) linkWorkerFace(worker.documentId, result.person.id);
+    }, session.id);
+    if (worker && result.person?.id) linkWorkerFace(worker.id, result.person.id);
     res.json(result);
   } catch (error) { next(error); }
 });
 
-app.post("/api/face/code", requireStaff, (req, res, next) => {
+app.post("/api/face/code", (req, res, next) => {
   try {
-    res.json(face.verifyCode({ documentId: req.body?.documentId, pin: req.body?.pin }, req.session.username));
+    const session = requireActor(req, res);
+    if (!session) return;
+    res.json(face.verifyCode({ documentId: req.body?.documentId, pin: req.body?.pin }, session.id));
   } catch (error) { next(error); }
 });
 
-app.get("/api/me", (req, res) => {
-  const session = readSession(req);
-  if (session?.role === "trabajador") {
-    const worker = getWorker(session.username);
-    if (!worker) return res.status(401).json({ message: "Entra con tu cuenta de trabajador." });
-    const initials = worker.fullName.split(/\s+/).slice(0, 2).map((part) => part[0] || "").join("").toUpperCase();
-    return res.json({ fullName: worker.fullName, role: worker.role, initials, documentId: worker.documentId, shift: worker.shift });
-  }
-  res.json(store.me());
+app.get("/api/dashboard", (req, res) => {
+  res.json(store.dashboard(workerId(req)));
 });
 
-app.get("/api/dashboard", (_req, res) => {
-  res.json(store.dashboard());
-});
-
-app.get("/api/courses", (_req, res) => {
-  res.json(store.listCourses());
+app.get("/api/courses", (req, res) => {
+  res.json(store.listCourses(workerId(req)));
 });
 
 app.get("/api/courses/:id", (req, res) => {
-  const course = store.getCourse(req.params.id);
+  const course = store.getCourse(req.params.id, workerId(req));
   if (!course) return res.status(404).json({ message: "Ese curso no está en el taller." });
   res.json(course);
 });
 
 app.post("/api/courses/:id/lessons/:lessonId/complete", (req, res) => {
-  const course = store.toggleLesson(req.params.id, req.params.lessonId);
+  const course = store.toggleLesson(req.params.id, req.params.lessonId, workerId(req));
   if (!course) return res.status(404).json({ message: "No encontré esa lección." });
   res.json(course);
 });
 
 app.get("/api/courses/:id/quiz", (req, res) => {
-  const quiz = store.getQuiz(req.params.id);
+  const quiz = store.getQuiz(req.params.id, workerId(req));
   if (!quiz) return res.status(404).json({ message: "Ese curso no tiene práctica." });
   res.json(quiz);
 });
 
 app.post("/api/courses/:id/quiz", (req, res) => {
   try {
-    const result = store.submitQuiz(req.params.id, req.body?.answers);
+    const result = store.submitQuiz(req.params.id, req.body?.answers, workerId(req));
     if (!result) return res.status(404).json({ message: "Ese curso no tiene práctica." });
     res.json(result);
   } catch (error) {
@@ -317,12 +352,20 @@ app.get("/api/team", (_req, res) => {
   res.json(store.listTeam());
 });
 
-app.get("/api/progress", (_req, res) => {
-  res.json(store.progressReport());
+app.get("/api/progress", (req, res) => {
+  res.json(store.progressReport(workerId(req)));
 });
 
 app.use("/api", (_req, res) => {
   res.status(404).json({ message: "Esa ruta no existe." });
+});
+
+app.use(express.static(frontendDir));
+app.use((req, res, next) => {
+  if (req.method !== "GET" || req.path.startsWith("/api")) return next();
+  res.sendFile(path.join(frontendDir, "index.html"), (error) => {
+    if (error) next();
+  });
 });
 
 app.use((error, _req, res, _next) => {

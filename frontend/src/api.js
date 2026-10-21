@@ -1,12 +1,17 @@
 import { useEffect, useState } from "react";
-import { readSession } from "./session.js";
+
+export const WORKER_KEY = "trigal-worker";
+
+export function workerToken() {
+  return sessionStorage.getItem(WORKER_KEY) || "";
+}
 
 export async function api(path, options = {}) {
-  const token = readSession().token;
+  const worker = workerToken();
   const response = await fetch(`/api${path}`, {
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(worker ? { Authorization: `Bearer ${worker}` } : {}),
       ...(options.headers || {}),
     },
     ...options,
