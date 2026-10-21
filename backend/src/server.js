@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import * as store from "./store.js";
-import { createStaff, ensureAdmin, ensureStaff, listStaff, loginAdmin, setStaffActive, verifySession } from "./auth.js";
+import { createStaff, ensureAdmin, ensureStaff, getWorker, linkWorkerFace, listStaff, loginAdmin, loginWorker, registerWorker, setStaffActive, verifySession } from "./auth.js";
 import * as admin from "./admin.js";
 import * as face from "./faceStore.js";
 import { analyzeFrames, engineStatus, startEngine } from "./faceEngine.js";
@@ -32,10 +32,20 @@ function requireAdmin(req, res, next) {
 
 function requireStaff(req, res, next) {
   const session = readSession(req);
-  if (!session) return res.status(401).json({ message: "Entra con una cuenta autorizada para escanear." });
+  if (!session) return res.status(401).json({ message: "Entra con tu cuenta de trabajador." });
   req.session = session;
   next();
 }
+
+app.post("/api/workers/register", (req, res) => {
+  try { res.json(registerWorker(req.body || {})); }
+  catch (error) { res.status(error.status || 500).json({ message: error.message || "No se pudo crear la cuenta." }); }
+});
+
+app.post("/api/workers/login", (req, res) => {
+  try { res.json(loginWorker(req.body?.documentId, req.body?.password)); }
+  catch (error) { res.status(error.status || 500).json({ message: error.message || "No se pudo entrar." }); }
+});
 
 app.post("/api/admin/login", (req, res) => {
   try {
@@ -124,8 +134,12 @@ app.get("/api/admin/face/attendance", (req, res) => {
 });
 
 app.get("/api/admin/face/history", (req, res) => {
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.date || "")) ? String(req.query.date) : "";
-  res.json(face.history({ date, documentId: String(req.query.q || "") }));
+  const valid = (value) => (/^\d{4}-\d{2}-\d{2}$/.test(String(value || "")) ? String(value) : "");
+  res.json(face.history({
+    from: valid(req.query.from) || valid(req.query.date),
+    to: valid(req.query.to) || valid(req.query.date),
+    documentId: String(req.query.q || ""),
+  }));
 });
 
 app.get("/api/admin/face/alerts", (_req, res) => {
@@ -154,6 +168,10 @@ app.post("/api/admin/face/people/:id/reactivate", (req, res, next) => {
 
 app.post("/api/admin/face/people/:id/code", (req, res, next) => {
   try { res.json(face.assignCode(req.params.id)); } catch (error) { next(error); }
+});
+
+app.patch("/api/admin/face/people/:id", (req, res, next) => {
+  try { res.json(face.updatePerson(req.params.id, req.body || {}, req.session.username)); } catch (error) { next(error); }
 });
 
 app.delete("/api/admin/face/people/:id/face", (req, res, next) => {
@@ -198,6 +216,21 @@ app.get("/api/face/status", requireStaff, (_req, res) => {
   });
 });
 
+app.get("/api/face/today", requireStaff, (req, res) => {
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(new Date());
+  const worker = req.session.role === "trabajador" ? getWorker(req.session.username) : null;
+  res.json(face.history({ date: today })
+    .filter((event) => event.access === "permitido")
+    .filter((event) => !worker || event.personId === worker.facePersonId || String(event.documentId || "").toLowerCase() === worker.documentId.toLowerCase())
+    .map((event) => ({
+      id: event.id,
+      at: event.at,
+      name: event.name,
+      personId: event.personId,
+      result: event.result,
+    })));
+});
+
 app.post("/api/face/verify", requireStaff, async (req, res, next) => {
   try {
     const status = engineStatus();
@@ -210,16 +243,20 @@ app.post("/api/face/register", requireStaff, async (req, res, next) => {
   try {
     const status = engineStatus();
     const reading = status.ready ? await analyzeFrames(req.body?.frames) : clientReading(req.body);
-    res.json(face.registerPerson({
-      fullName: req.body?.fullName,
-      documentId: req.body?.documentId,
-      role: req.body?.role,
+    const worker = req.session.role === "trabajador" ? getWorker(req.session.username) : null;
+    const result = face.registerPerson({
+      fullName: worker?.fullName || req.body?.fullName,
+      documentId: worker?.documentId || req.body?.documentId,
+      role: req.body?.role || worker?.role,
       email: req.body?.email,
       consent: req.body?.consent,
       descriptor: reading.descriptor,
       liveness: reading.liveness,
       quality: reading.quality,
-    }, req.session.username));
+      workerId: worker?.id || "",
+    }, req.session.username);
+    if (worker && result.person?.id) linkWorkerFace(worker.documentId, result.person.id);
+    res.json(result);
   } catch (error) { next(error); }
 });
 
@@ -229,7 +266,14 @@ app.post("/api/face/code", requireStaff, (req, res, next) => {
   } catch (error) { next(error); }
 });
 
-app.get("/api/me", (_req, res) => {
+app.get("/api/me", (req, res) => {
+  const session = readSession(req);
+  if (session?.role === "trabajador") {
+    const worker = getWorker(session.username);
+    if (!worker) return res.status(401).json({ message: "Entra con tu cuenta de trabajador." });
+    const initials = worker.fullName.split(/\s+/).slice(0, 2).map((part) => part[0] || "").join("").toUpperCase();
+    return res.json({ fullName: worker.fullName, role: worker.role, initials, documentId: worker.documentId, shift: worker.shift });
+  }
   res.json(store.me());
 });
 

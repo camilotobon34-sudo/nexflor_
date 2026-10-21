@@ -1,17 +1,28 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useApi } from "../api.js";
+import { clearSession, readSession } from "../session.js";
 
 const links = [
   { to: "/", label: "Inicio", end: true, icon: HomeIcon },
-  { to: "/cursos", label: "Cursos", icon: BookIcon },
+  { to: "/cursos", label: "Academy", icon: BookIcon },
   { to: "/practica/preparacion-segura", label: "Práctica", icon: CheckIcon },
   { to: "/equipo", label: "Equipo", icon: PeopleIcon },
   { to: "/progreso", label: "Progreso", icon: ChartIcon },
-  { to: "/entrar", label: "Acceso", icon: FaceIcon },
+  { to: "/id", label: "NEXFLOR ID", icon: FaceIcon },
 ];
 
 export default function Shell() {
   const me = useApi("/me");
+  const session = readSession();
+  const navigate = useNavigate();
+  const fullName = me.data?.fullName || session.name || "Trabajador";
+  const job = me.data?.role || session.job || "Trabajador";
+  const initials = me.data?.initials || fullName.split(/\s+/).slice(0, 2).map((part) => part[0] || "").join("").toUpperCase();
+
+  function logout() {
+    clearSession();
+    navigate("/entrar");
+  }
   const formatted = new Intl.DateTimeFormat("es-CO", {
     weekday: "long",
     day: "numeric",
@@ -25,8 +36,8 @@ export default function Shell() {
         <div className="brand">
           <span className="mark">S</span>
           <div>
-            <strong>Serranía</strong>
-            <small>Taller floral</small>
+            <strong>Nexflor</strong>
+            <small>Flores El Trigal</small>
           </div>
         </div>
         <nav>
@@ -37,22 +48,23 @@ export default function Shell() {
             </NavLink>
           ))}
         </nav>
-        <NavLink to="/admin" className="admin-link">Administrar</NavLink>
+        {session.role === "admin" && <NavLink to="/admin" className="admin-link">Administrar</NavLink>}
+        <button type="button" className="admin-link" onClick={logout}>Salir</button>
         <div className="side-card">
           <p>Turno de hoy</p>
-          <strong>{me.data?.fullName || "Laura Méndez"}</strong>
-          <span>{me.data?.role || "Coordinadora de taller"}</span>
+          <strong>{fullName}</strong>
+          <span>{job}</span>
         </div>
       </aside>
       <div className="main">
         <header className="topbar">
           <p>{today}</p>
-          <NavLink to="/admin" className="admin-link top-admin">Administrar</NavLink>
+          {session.role === "admin" && <NavLink to="/admin" className="admin-link top-admin">Administrar</NavLink>}
           <div className="who">
-            <span>{me.data?.initials || "LM"}</span>
+            <span>{initials}</span>
             <div>
-              <strong>{me.data?.fullName || "Laura Méndez"}</strong>
-              <small>{me.data?.role || "Coordinadora"}</small>
+              <strong>{fullName}</strong>
+              <small>{job}</small>
             </div>
           </div>
         </header>

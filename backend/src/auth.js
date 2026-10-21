@@ -86,6 +86,11 @@ export function verifySession(token) {
   if (!validSig(`${role}.${username}.${exp}`, sig)) return null;
   if (Number(exp) <= Date.now()) return null;
   if (role === "admin" && username === "admin") return { role, username };
+  if (role === "trabajador") {
+    if (!/^[a-z0-9-]{4,20}$/.test(username)) return null;
+    const worker = (readDb().workers || []).find((item) => item.documentId.toLowerCase() === username && item.active !== false);
+    return worker ? { role, username, name: worker.fullName, workerId: worker.id } : null;
+  }
   if (role !== "portero" || !/^[a-z0-9]{3,20}$/.test(username)) return null;
   const account = (readDb().staff || []).find((item) => item.username === username && item.role === "portero" && item.active === true);
   return account ? { role: "portero", username } : null;
@@ -188,4 +193,96 @@ export function setStaffActive(id, active) {
   person.active = active === true;
   writeDb(db);
   return publicStaff(person);
+}
+
+function cleanWorkerText(value, max) {
+  return String(value || "").trim().replace(/\s+/g, " ").slice(0, max);
+}
+
+function workerSession(worker) {
+  return {
+    token: signSession("trabajador", worker.documentId.toLowerCase()),
+    role: "trabajador",
+    name: worker.fullName,
+    username: worker.documentId.toLowerCase(),
+    documentId: worker.documentId,
+    job: worker.role,
+    shift: worker.shift,
+  };
+}
+
+export function getWorker(documentId) {
+  const code = String(documentId || "").toLowerCase();
+  return (readDb().workers || []).find((item) => item.documentId.toLowerCase() === code && item.active !== false) || null;
+}
+
+export function linkWorkerFace(documentId, personId) {
+  const db = readDb();
+  const worker = (db.workers || []).find((item) => item.documentId.toLowerCase() === String(documentId || "").toLowerCase());
+  if (!worker) return null;
+  worker.facePersonId = personId;
+  writeDb(db);
+  return worker.id;
+}
+
+export function registerWorker({ fullName, documentId, password, role, shift }) {
+  const name = cleanWorkerText(fullName, 80);
+  const document = cleanWorkerText(documentId, 20);
+  const job = cleanWorkerText(role, 80);
+  const pass = String(password || "");
+  if (name.length < 3) {
+    const error = new Error("Escribe el nombre completo.");
+    error.status = 400;
+    throw error;
+  }
+  if (!/^[A-Za-z0-9-]{4,20}$/.test(document)) {
+    const error = new Error("La identificación debe tener entre 4 y 20 letras o números.");
+    error.status = 400;
+    throw error;
+  }
+  if (job.length < 2) {
+    const error = new Error("Escribe el cargo o el tipo de persona.");
+    error.status = 400;
+    throw error;
+  }
+  if (pass.length < 6) {
+    const error = new Error("La contraseña necesita al menos 6 caracteres.");
+    error.status = 400;
+    throw error;
+  }
+  const db = readDb();
+  if (!Array.isArray(db.workers)) db.workers = [];
+  if (db.workers.some((item) => item.documentId.toLowerCase() === document.toLowerCase())) {
+    const error = new Error("Esa identificación ya tiene cuenta. Entra con ella.");
+    error.status = 409;
+    throw error;
+  }
+  const worker = {
+    id: `w_${randomBytes(8).toString("hex")}`,
+    fullName: name,
+    documentId: document,
+    role: job,
+    shift: shift === "Tarde" ? "Tarde" : "Mañana",
+    passwordHash: hashPassword(pass),
+    active: true,
+    facePersonId: "",
+    createdAt: Date.now(),
+  };
+  db.workers.push(worker);
+  writeDb(db);
+  return workerSession(worker);
+}
+
+export function loginWorker(documentId, password) {
+  if (Date.now() < attempts.until) {
+    const minutes = Math.max(1, Math.ceil((attempts.until - Date.now()) / 60000));
+    const error = new Error(`Demasiados intentos. Espera ${minutes} min para volver a entrar.`);
+    error.status = 429;
+    throw error;
+  }
+  const worker = getWorker(documentId);
+  if (!worker || !checkPassword(password, worker.passwordHash)) rejectLogin();
+  attempts.count = 0;
+  attempts.until = 0;
+  return workerSession(worker);
 }

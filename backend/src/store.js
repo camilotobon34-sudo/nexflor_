@@ -1,14 +1,22 @@
+import { createRequire } from "module";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { enrich } from "./teach.js";
 
+const require = createRequire(import.meta.url);
 const file = path.join(path.dirname(fileURLToPath(import.meta.url)), "../data/db.json");
+const seed = require("../data/db.json");
 let memory = null;
 
 function read() {
   if (memory) return memory;
-  memory = JSON.parse(fs.readFileSync(file, "utf8"));
+  try {
+    memory = JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+    memory = JSON.parse(JSON.stringify(seed));
+  }
   return memory;
 }
 

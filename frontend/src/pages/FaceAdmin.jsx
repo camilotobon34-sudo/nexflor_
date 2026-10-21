@@ -29,7 +29,10 @@ const labels = {
 export default function FaceAdmin({ token }) {
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(new Date());
   const [date, setDate] = useState(today);
+  const [from, setFrom] = useState(today);
+  const [to, setTo] = useState(today);
   const [query, setQuery] = useState("");
+  const [edit, setEdit] = useState(null);
   const [board, setBoard] = useState(null);
   const [people, setPeople] = useState([]);
   const [history, setHistory] = useState([]);
@@ -48,7 +51,7 @@ export default function FaceAdmin({ token }) {
       const [nextBoard, nextPeople, nextHistory, nextAlerts, nextAudit, nextStaff] = await Promise.all([
         adminApi(`/admin/face/attendance?date=${date}`, token),
         adminApi("/admin/face/people", token),
-        adminApi(`/admin/face/history?date=${date}&q=${encodeURIComponent(nextQuery)}`, token),
+        adminApi(`/admin/face/history?from=${from}&to=${to}&q=${encodeURIComponent(nextQuery)}`, token),
         adminApi("/admin/face/alerts", token),
         adminApi("/admin/face/audit", token),
         adminApi("/admin/staff", token),
@@ -70,7 +73,7 @@ export default function FaceAdmin({ token }) {
     load(query);
     const timer = setInterval(() => load(queryRef.current), 8000);
     return () => clearInterval(timer);
-  }, [token, date]);
+  }, [token, date, from, to]);
 
   async function act(path) {
     setPinNote("");
@@ -91,6 +94,38 @@ export default function FaceAdmin({ token }) {
       setError(err.message);
     }
   }
+
+  async function savePerson(event) {
+    event.preventDefault();
+    setError("");
+    try {
+      await adminApi(`/admin/face/people/${edit.id}`, token, { method: "PATCH", body: JSON.stringify(edit) });
+      setEdit(null);
+      await load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  function exportReport() {
+    const rows = [["registro", "fecha", "persona", "identificacion", "personaId", "resultado", "acceso", "motivo"]];
+    for (const event of history) {
+      rows.push([event.id, new Date(event.at).toISOString(), event.name, event.documentId, event.personId || "", event.result, event.access, event.reason]);
+    }
+    const csv = rows.map((row) => row.map((cell) => `"${String(cell ?? "").replaceAll('"', '""')}"`).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `nexflor-id-${from || "inicio"}-${to || "fin"}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  const visiblePeople = people.filter((person) => {
+    const text = query.trim().toLowerCase();
+    if (!text) return true;
+    return person.fullName.toLowerCase().includes(text) || person.documentId.toLowerCase().includes(text);
+  });
 
   async function saveStaff(event) {
     event.preventDefault();
@@ -131,9 +166,12 @@ export default function FaceAdmin({ token }) {
       <section className="card">
         <header><h2>Registro de entradas</h2></header>
         <div className="toolbar">
-          <label>Fecha<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label>
+          <label>Fecha de asistencia<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label>
+          <label>Desde<input type="date" value={from} onChange={(event) => setFrom(event.target.value)} /></label>
+          <label>Hasta<input type="date" value={to} onChange={(event) => setTo(event.target.value)} /></label>
           <label>Persona<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nombre o identificación" /></label>
           <button type="button" onClick={load}>Consultar</button>
+          <button type="button" onClick={exportReport}>Exportar CSV</button>
         </div>
         <div className="split-lists">
           <div>
@@ -167,13 +205,25 @@ export default function FaceAdmin({ token }) {
 
       <section className="card">
         <h2>Personas registradas</h2>
+        {edit && (
+          <form className="face-form" onSubmit={savePerson}>
+            <label>Nombre<input value={edit.fullName} onChange={(event) => setEdit({ ...edit, fullName: event.target.value })} /></label>
+            <label>Identificación<input value={edit.documentId} onChange={(event) => setEdit({ ...edit, documentId: event.target.value })} /></label>
+            <label>Cargo<input value={edit.role || ""} onChange={(event) => setEdit({ ...edit, role: event.target.value })} /></label>
+            <label>Correo<input value={edit.email || ""} onChange={(event) => setEdit({ ...edit, email: event.target.value })} /></label>
+            <div className="face-actions">
+              <button className="button" type="submit">Guardar cambios</button>
+              <button type="button" onClick={() => setEdit(null)}>Cancelar</button>
+            </div>
+          </form>
+        )}
         <div className="table-wrap">
           <table>
             <thead>
               <tr><th>Nombre</th><th>Identificación</th><th>Cargo</th><th>Registro</th><th>Estado</th><th></th></tr>
             </thead>
             <tbody>
-              {people.map((person) => (
+              {visiblePeople.map((person) => (
                 <tr key={person.id}>
                   <td>{person.fullName}</td>
                   <td>{person.documentId}</td>
@@ -182,6 +232,7 @@ export default function FaceAdmin({ token }) {
                   <td><span className={`pill ${person.status}`}>{labels[person.status] || person.status}</span></td>
                   <td className="row-actions">
                     {person.status !== "autorizado" && <button type="button" onClick={() => act(`/admin/face/people/${person.id}/approve`)}>Aprobar</button>}
+                    <button type="button" onClick={() => setEdit(person)}>Editar</button>
                     {person.status === "pendiente" && <button type="button" onClick={() => act(`/admin/face/people/${person.id}/reject`)}>Rechazar</button>}
                     {person.status === "autorizado" && <button type="button" onClick={() => act(`/admin/face/people/${person.id}/suspend`)}>Suspender</button>}
                     {person.status === "suspendido" && <button type="button" onClick={() => act(`/admin/face/people/${person.id}/reactivate`)}>Reactivar</button>}
@@ -194,7 +245,7 @@ export default function FaceAdmin({ token }) {
             </tbody>
           </table>
         </div>
-        {!people.length && <p className="muted">Todavía no hay personas registradas con rostro.</p>}
+        {!visiblePeople.length && <p className="muted">No hay personas que coincidan con la búsqueda.</p>}
       </section>
 
       <section className="card">
@@ -202,11 +253,12 @@ export default function FaceAdmin({ token }) {
         <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>Hora</th><th>Persona</th><th>Resultado</th><th>Acceso</th><th>Motivo</th><th>Intentos</th><th>Registró</th></tr>
+              <tr><th>Registro</th><th>Hora</th><th>Persona</th><th>Resultado</th><th>Acceso</th><th>Motivo</th><th>Intentos</th><th>Registró</th></tr>
             </thead>
             <tbody>
               {history.map((event) => (
                 <tr key={event.id}>
+                  <td>{event.id}</td>
                   <td>{when(event.at)}</td>
                   <td>{event.name}</td>
                   <td>{labels[event.result] || event.result}</td>

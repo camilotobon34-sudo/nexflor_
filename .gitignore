@@ -1,7 +1,7 @@
 node_modules
 dist
 .design
-.env
+.env*
+.vercel
 backend/uploads
 backend/data/face.key
-.vercel

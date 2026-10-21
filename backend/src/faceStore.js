@@ -3,10 +3,11 @@ import { readDb, writeDb } from "./store.js";
 import { hashPassword, checkPassword } from "./auth.js";
 import { decryptTemplate, encryptTemplate } from "./faceCrypto.js";
 
-export const CONSENT_TEXT = "Autorizo a Serranía a capturar una plantilla de mi rostro, solo para comprobar mi ingreso al taller. Entiendo que no se guarda una foto pública, que un administrador debe aprobarme antes del primer ingreso, y que puedo pedir la actualización o eliminación de estos datos. Ley 1581 de 2012 de Colombia.";
+export const CONSENT_TEXT = "Autorizo a Flores El Trigal, en El Carmen de Viboral, a guardar una plantilla cifrada de mi rostro solo para comprobar mi ingreso con NEXFLOR ID. No se guarda una foto. Un administrador debe aprobarme antes del primer ingreso y puedo pedir la actualización o la eliminación de estos datos. Ley 1581 de 2012 de Colombia.";
 const RETENTION_MS = 180 * 24 * 60 * 60 * 1000;
 const AUDIT_MS = 365 * 24 * 60 * 60 * 1000;
 const FAIL_WINDOW = 15 * 60 * 1000;
+const DUPLICATE_MS = 2 * 60 * 1000;
 const MATCH_DISTANCE = 0.5;
 const MATCH_MARGIN = 0.08;
 
@@ -142,6 +143,12 @@ function noteFailure(db, now, reason, person) {
   return guard.count;
 }
 
+function recentEntry(db, personId, now) {
+  return [...db.accessEvents].reverse().find((event) => (
+    event.personId === personId && event.access === "permitido" && now - event.at < DUPLICATE_MS
+  ));
+}
+
 function record(db, fields) {
   const event = {
     id: nid("a"),
@@ -201,6 +208,22 @@ export function verifyFace({ descriptor, liveness, quality, staticImage }, actor
   let attempts = 0;
   if (access === "permitido") {
     db.faceGuard = { count: 0, since: now, until: 0, alerted: false };
+    const previous = recentEntry(db, person.id, now);
+    if (previous) {
+      writeDb(db);
+      return {
+        access,
+        result: previous.result,
+        reason: "",
+        message: "Esta persona ya tiene un ingreso en los últimos minutos. No se creó otro registro.",
+        name: person.fullName,
+        personId: person.id,
+        eventId: previous.id,
+        duplicate: true,
+        retry: false,
+        at: previous.at,
+      };
+    }
   } else {
     attempts = noteFailure(db, now, reason, person);
   }
@@ -220,6 +243,9 @@ export function verifyFace({ descriptor, liveness, quality, staticImage }, actor
     reason,
     message: access === "permitido" ? MESSAGES.autorizado : MESSAGES[reason] || MESSAGES.imagen,
     name: access === "permitido" ? person.fullName : person && reason !== "desconocido" ? person.fullName : "Persona no reconocida",
+    personId: person?.id || null,
+    eventId: event.id,
+    duplicate: false,
     retry: access !== "permitido",
     at: event.at,
   };
@@ -241,11 +267,27 @@ export function verifyCode({ documentId, pin }, actor = "") {
     access = "permitido";
     reason = "";
     db.faceGuard = { count: 0, since: now, until: 0, alerted: false };
+    const previous = recentEntry(db, person.id, now);
+    if (previous) {
+      writeDb(db);
+      return {
+        access,
+        result: previous.result,
+        reason: "",
+        message: "Esta persona ya tiene un ingreso en los últimos minutos. No se creó otro registro.",
+        name: person.fullName,
+        personId: person.id,
+        eventId: previous.id,
+        duplicate: true,
+        retry: false,
+        at: previous.at,
+      };
+    }
   } else if (valid) {
     reason = person.status;
   }
   const attempts = access === "permitido" ? 0 : noteFailure(db, now, reason, valid ? person : null);
-  record(db, {
+  const event = record(db, {
     person: valid ? person : null,
     result: access === "permitido" ? "autorizado" : "denegado",
     access,
@@ -261,6 +303,9 @@ export function verifyCode({ documentId, pin }, actor = "") {
     reason,
     message: access === "permitido" ? MESSAGES.autorizado : MESSAGES[reason] || MESSAGES.codigo,
     name: access === "permitido" ? person.fullName : "Persona no reconocida",
+    personId: valid ? person.id : null,
+    eventId: event.id,
+    duplicate: false,
     retry: access !== "permitido",
     at: now,
   };
@@ -270,7 +315,7 @@ function cleanText(value, max) {
   return String(value || "").trim().replace(/\s+/g, " ").slice(0, max);
 }
 
-export function registerPerson({ fullName, documentId, role, email, consent, descriptor, liveness, quality }, actor = "") {
+export function registerPerson({ fullName, documentId, role, email, consent, descriptor, liveness, quality, workerId }, actor = "") {
   if (consent !== true) {
     const error = new Error("Hace falta el consentimiento para guardar datos del rostro.");
     error.status = 400;
@@ -287,6 +332,11 @@ export function registerPerson({ fullName, documentId, role, email, consent, des
   }
   if (!/^[A-Za-z0-9-]{4,20}$/.test(document)) {
     const error = new Error("La identificación debe tener entre 4 y 20 letras o números.");
+    error.status = 400;
+    throw error;
+  }
+  if (job.length < 2) {
+    const error = new Error("Escribe el cargo o el tipo de persona.");
     error.status = 400;
     throw error;
   }
@@ -322,6 +372,7 @@ export function registerPerson({ fullName, documentId, role, email, consent, des
     consentText: CONSENT_TEXT,
     template: encryptTemplate(descriptor),
     pinHash: "",
+    workerId: workerId || "",
   };
   db.facePeople.push(person);
   audit(db, "registro", `${actor || "personal"} registró a ${person.fullName}. Quedó pendiente de aprobación.`);
@@ -374,6 +425,48 @@ export function removeFace(id) {
   person.template = null;
   if (person.status === "autorizado" && !person.pinHash) person.status = "suspendido";
   audit(db, "eliminar-rostro", `Se eliminó la plantilla facial de ${person.fullName}.`);
+  writeDb(db);
+  return publicPerson(person);
+}
+
+export function updatePerson(id, { fullName, documentId, role, email }, actor) {
+  const name = cleanText(fullName, 80);
+  const document = cleanText(documentId, 20);
+  const job = cleanText(role, 80);
+  const mail = cleanText(email, 80);
+  if (name.length < 3) {
+    const error = new Error("Escribe el nombre completo.");
+    error.status = 400;
+    throw error;
+  }
+  if (!/^[A-Za-z0-9-]{4,20}$/.test(document)) {
+    const error = new Error("La identificación debe tener entre 4 y 20 letras o números.");
+    error.status = 400;
+    throw error;
+  }
+  if (job.length < 2) {
+    const error = new Error("Escribe el cargo o el tipo de persona.");
+    error.status = 400;
+    throw error;
+  }
+  if (mail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
+    const error = new Error("El correo no parece válido.");
+    error.status = 400;
+    throw error;
+  }
+  const db = ensureFace();
+  const person = findPerson(db, id);
+  const taken = db.facePeople.find((item) => item.id !== id && item.documentId.toLowerCase() === document.toLowerCase());
+  if (taken) {
+    const error = new Error("Esa identificación ya pertenece a otra persona.");
+    error.status = 409;
+    throw error;
+  }
+  person.fullName = name;
+  person.documentId = document;
+  person.role = job;
+  person.email = mail;
+  audit(db, "actualizar", `${actor || "admin"} actualizó los datos de ${person.fullName}.`);
   writeDb(db);
   return publicPerson(person);
 }
@@ -435,10 +528,17 @@ export function attendance(date = bogotaDate()) {
   };
 }
 
-export function history({ date = "", documentId = "" } = {}) {
+export function history({ date = "", from = "", to = "", documentId = "" } = {}) {
+  const start = from || date;
+  const end = to || date;
   const code = String(documentId || "").trim().toLowerCase();
   return ensureFace().accessEvents
-    .filter((event) => !date || bogotaDate(event.at) === date)
+    .filter((event) => {
+      const day = bogotaDate(event.at);
+      if (start && day < start) return false;
+      if (end && day > end) return false;
+      return true;
+    })
     .filter((event) => !code || String(event.documentId || "").toLowerCase().includes(code) || String(event.name || "").toLowerCase().includes(code))
     .slice(-200)
     .reverse()
@@ -449,6 +549,7 @@ function publicEvent(event) {
   return {
     id: event.id,
     at: event.at,
+    personId: event.personId || null,
     name: event.name || "Persona no reconocida",
     documentId: event.documentId || "",
     result: event.result,

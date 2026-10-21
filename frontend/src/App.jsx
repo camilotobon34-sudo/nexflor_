@@ -1,5 +1,7 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import Shell from "./components/Shell.jsx";
+import Enter from "./pages/Enter.jsx";
+import { readSession } from "./session.js";
 import Home from "./pages/Home.jsx";
 import Courses from "./pages/Courses.jsx";
 import Course from "./pages/Course.jsx";
@@ -12,24 +14,32 @@ import Admin from "./pages/Admin.jsx";
 import Face from "./pages/Face.jsx";
 import AdminShortcut from "./components/AdminShortcut.jsx";
 
+function RequireSession() {
+  if (!readSession().token) return <Navigate to="/entrar" replace />;
+  return <Outlet />;
+}
+
 export default function App() {
   return (
     <>
     <AdminShortcut />
     <Routes>
       <Route path="admin" element={<Admin />} />
-      <Route element={<Shell />}>
-        <Route index element={<Home />} />
-        <Route path="cursos" element={<Courses />} />
-        <Route path="cursos/:id" element={<Course />} />
-        <Route path="cursos/:id/taller" element={<Workshop />} />
-        <Route path="cursos/:id/juego" element={<Game />} />
-        <Route path="practica/:id" element={<Practice />} />
-        <Route path="equipo" element={<Team />} />
-        <Route path="progreso" element={<Progress />} />
-        <Route path="ingreso" element={<Face />} />
-        <Route path="entrar" element={<Face />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="entrar" element={<Enter />} />
+      <Route element={<RequireSession />}>
+        <Route element={<Shell />}>
+          <Route index element={<Home />} />
+          <Route path="cursos" element={<Courses />} />
+          <Route path="cursos/:id" element={<Course />} />
+          <Route path="cursos/:id/taller" element={<Workshop />} />
+          <Route path="cursos/:id/juego" element={<Game />} />
+          <Route path="practica/:id" element={<Practice />} />
+          <Route path="equipo" element={<Team />} />
+          <Route path="progreso" element={<Progress />} />
+          <Route path="id" element={<Face />} />
+          <Route path="ingreso" element={<Navigate to="/id" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
       </Route>
     </Routes>
     </>

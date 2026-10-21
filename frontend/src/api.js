@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
+import { readSession } from "./session.js";
 
 export async function api(path, options = {}) {
+  const token = readSession().token;
   const response = await fetch(`/api${path}`, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    },
     ...options,
   });
   const body = await response.json().catch(() => ({}));

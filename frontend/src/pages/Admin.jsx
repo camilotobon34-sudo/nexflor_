@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { api } from "../api.js";
 import { clearSession, readSession, saveSession, TOKEN_KEY } from "../session.js";
 import FaceAdmin from "./FaceAdmin.jsx";
@@ -44,6 +44,8 @@ export default function Admin() {
     return <Login onToken={enter} />;
   }
 
+  if (session.role === "trabajador") return <Navigate to="/" replace />;
+
   if (session.role === "portero") {
     return (
       <main className="login">
@@ -52,7 +54,7 @@ export default function Admin() {
           <h1>Panel de administración</h1>
           <p>La cuenta de {session.name || "escaneo"} puede registrar y verificar ingresos. Los reportes, las alertas y las aprobaciones quedan en la cuenta de administrador.</p>
           <div className="face-actions">
-            <Link className="button" to="/ingreso">Ir a reconocimiento facial</Link>
+            <Link className="button" to="/id">Ir a NEXFLOR ID</Link>
             <button type="button" onClick={logout}>Salir</button>
           </div>
         </section>
@@ -146,7 +148,7 @@ function Panel({ token, data, setData, error, setError, logout }) {
         </div>
       </header>
       <div className="chips">
-        {[["cursos", "Cursos"], ["equipo", "Equipo"], ["archivos", "Archivos"], ["ingreso", "Asistencia"]].map(([item, label]) => (
+        {[["cursos", "Academy"], ["equipo", "Equipo"], ["archivos", "Archivos"], ["ingreso", "NEXFLOR ID"]].map(([item, label]) => (
           <button key={item} type="button" className={tab === item ? "on" : ""} onClick={() => setTab(item)}>
             {label}
           </button>

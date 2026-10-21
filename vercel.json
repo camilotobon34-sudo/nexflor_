@@ -1,7 +1,13 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "frontend/dist",
+  "functions": {
+    "api/handler.js": {
+      "includeFiles": "backend/data/**"
+    }
+  },
   "rewrites": [
+    { "source": "/api/((?!handler(?:/|$)).*)", "destination": "/api/handler?__path=$1" },
     { "source": "/((?!api/|assets/|models/|flores/).*)", "destination": "/index.html" }
   ]
 }

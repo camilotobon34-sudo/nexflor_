@@ -11,6 +11,11 @@ export default function Home() {
         <section className="page">
           <p className="eyebrow">Inicio del turno</p>
           <h1>{data.greeting}</h1>
+          <div className="chips">
+            <Link to="/id">1. NEXFLOR ID</Link>
+            <Link to="/cursos">2. Academy</Link>
+            <Link to="/practica/preparacion-segura">3. Práctica</Link>
+          </div>
           <p className="lede">{data.subtitle}</p>
 
           <article className="hero">

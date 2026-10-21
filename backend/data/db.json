@@ -566,5 +566,6 @@
       "passwordHash": "8db08d5430c058a44b2c07ee660c30ae:c94014996d758815830e2f421f3af0c05b4bd3d111f6aba7efa3e1214848729f",
       "createdAt": 1792463023571
     }
-  ]
+  ],
+  "workers": []
 }
