@@ -89,7 +89,7 @@ export function readSession(token) {
   const [role, id, exp, sig] = parts;
   const body = `${role}.${id}.${exp}`;
   const expected = createHmac("sha256", SECRET).update(body).digest("hex");
-  const a = Buffer.from(sig);
+  const a = Buffer.from(String(sig));
   const b = Buffer.from(expected);
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
   if ((role !== "admin" && role !== "worker") || Number(exp) <= Date.now()) return null;

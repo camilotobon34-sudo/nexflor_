@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { TOKEN_KEY } from "../pages/Admin.jsx";
+import { clearSession } from "../session.js";
 
 const STEPS = ["F2", "e", "Control"];
 
@@ -22,8 +22,7 @@ export default function AdminShortcut() {
     function openLogin() {
       step = 0;
       held.clear();
-      sessionStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(TOKEN_KEY);
+      clearSession();
       window.dispatchEvent(new Event("serrania-admin-lock"));
       navigate("/admin");
     }
