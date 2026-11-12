@@ -44,13 +44,13 @@ export default function Admin() {
     return <Login onToken={enter} />;
   }
 
-  if (session.role === "portero") {
+  if (session.role === "portero" || session.role === "scanner") {
     return (
       <main className="login">
         <section className="card">
-          <p className="eyebrow">Serranía</p>
-          <h1>Panel de administración</h1>
-          <p>La cuenta de {session.name || "escaneo"} puede registrar y verificar ingresos. Los reportes, las alertas y las aprobaciones quedan en la cuenta de administrador.</p>
+          <p className="eyebrow">Control de acceso</p>
+          <h1>Cuenta de escaneo</h1>
+          <p>Esta cuenta puede registrar y verificar ingresos. Los reportes, las alertas y las aprobaciones solo están disponibles para administradores.</p>
           <div className="face-actions">
             <Link className="button" to="/ingreso">Ir a reconocimiento facial</Link>
             <button type="button" onClick={logout}>Salir</button>

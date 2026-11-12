@@ -9,12 +9,12 @@ export function workerToken() {
 export async function api(path, options = {}) {
   const worker = workerToken();
   const response = await fetch(`/api${path}`, {
+    ...options,
     headers: {
       "Content-Type": "application/json",
       ...(worker ? { Authorization: `Bearer ${worker}` } : {}),
       ...(options.headers || {}),
     },
-    ...options,
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(body.message || "No se pudo completar la solicitud.");

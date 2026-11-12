@@ -11,8 +11,11 @@
     const pad = (n) => String(n).padStart(2, "0");
     const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const plannedStart = [];
-    G.escenas.reduce((acc, e, i) => { plannedStart[i] = acc; return acc + e.seg; }, 0);
-    $("planned").textContent = mmss(G.duracion);
+    const plannedDuration = G.escenas.reduce((acc, e, i) => {
+        plannedStart[i] = acc;
+        return acc + e.seg;
+    }, 0);
+    $("planned").textContent = mmss(plannedDuration);
 
     let state = { index: 0, step: 0, steps: G.escenas.map((e) => e.pasos) };
     let first = null;

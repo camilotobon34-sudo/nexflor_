@@ -16,6 +16,11 @@ function key() {
     error.status = 503;
     throw error;
   }
+  if (process.env.VERCEL) {
+    const error = new Error("Configura FACE_DATA_KEY antes de procesar plantillas faciales en producción.");
+    error.status = 503;
+    throw error;
+  }
   if (!fs.existsSync(keyFile)) {
     const created = randomBytes(32);
     try {

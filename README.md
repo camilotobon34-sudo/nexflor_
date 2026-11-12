@@ -15,9 +15,7 @@ Un sitio que cuida y enseña a las personas en el trabajo.
 4. Abre https://127.0.0.1:5173
 5. El escáner publicado queda en https://nexflor.vercel.app/entrar
 
-Administrador: usuario `admin`, contraseña `Serrania2026`.
-Atajo del panel: F2, luego E, luego Ctrl.
-Personal de escaneo: usuario `portero`, contraseña `Ingreso2026`. Esa cuenta entra en Acceso y no ve reportes.
+El administrador crea las cuentas de escaneo desde Administración → Asistencia. No guardes contraseñas en este archivo ni publiques credenciales de prueba.
 
 ## Reconocimiento facial
 
@@ -30,3 +28,24 @@ En este computador el motor nativo no arranca: Node.js 24 no tiene el binario de
 En el celular la cámara pide HTTPS. El sitio de desarrollo usa un certificado local: abre `https://` y la dirección de este computador en la red, y acepta el aviso del navegador. En este mismo computador, `https://127.0.0.1:5173` también sirve.
 
 No se guardan fotos. Una persona nueva queda pendiente hasta que el administrador la apruebe. Si la cámara no sirve, el administrador puede crear un código alternativo.
+
+## Nexflor Posture
+
+La sección está en el menú **Nexflor Posture** y analiza la postura en el navegador con MediaPipe. La cámara requiere HTTPS o `localhost`; la vista frontal mide alineación lateral y la vista de perfil estima cabeza adelantada y tronco inclinado. Son señales preventivas, no diagnósticos médicos.
+
+## Preparación para producción
+
+El desarrollo local conserva `backend/data/db.json`. En Vercel, configura una base MySQL administrada antes de desplegar; Railway es una opción sencilla. Si Vercel se conecta desde fuera de Railway, usa la URL de conexión pública/TCP, no el hostname privado de Railway.
+
+Guarda en el entorno de producción del backend estos secretos, nunca en el repositorio:
+
+- `MYSQL_URL`: URL MySQL pública de Railway, por ejemplo `mysql://usuario:contraseña@host:puerto/base`.
+- `SESSION_SECRET`: cadena aleatoria de al menos 32 bytes. Puedes generarla con `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
+- `INITIAL_ADMIN_PASSWORD`: contraseña nueva y fuerte de al menos 16 caracteres. Se aplica a las cuentas de administrador una sola vez cuando se crea por primera vez la base Nexflor.
+- `FACE_DATA_KEY`: llave aleatoria hexadecimal de 32 bytes, generada con `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`. Guárdala de forma permanente: sin ella no se pueden leer plantillas faciales cifradas.
+
+El primer acceso con MySQL crea la tabla `nexflor_state` e inicializa su contenido con los datos incluidos en `backend/data/db.json`. Los cambios de cursos, progreso, equipo, cuentas y asistencia se guardan en MySQL; las imágenes administrativas también se conservan allí. No borres la base MySQL: contiene los datos activos de la plataforma.
+
+**No publiques hasta crear la base y cargar los cuatro secretos en el servicio de backend de Vercel.** Este adaptador mantiene el modelo JSON existente dentro de una transacción MySQL para evitar perder escrituras simultáneas; es apropiado para un sitio de bajo tráfico. Para crecer a muchos usuarios simultáneos, el siguiente paso sería normalizar los datos en tablas relacionales.
+
+Para probar la cámara en desarrollo puedes usar el HTTPS local que ya activa Vite, o iniciar el frontend en HTTP sobre `localhost` con `NEXFLOR_HTTPS=0`.

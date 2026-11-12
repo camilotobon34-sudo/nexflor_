@@ -1,22 +1,38 @@
+import { AsyncLocalStorage } from "async_hooks";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { enrich } from "./teach.js";
 
 const bundled = path.join(path.dirname(fileURLToPath(import.meta.url)), "../data/db.json");
+const mysqlRequest = new AsyncLocalStorage();
+let mysqlPoolPromise;
+let mysqlSchemaPromise;
 
 function dataFile() {
   if (!process.env.VERCEL) return bundled;
-  const copy = path.join("/tmp", "nexflor-db.json");
-  if (!fs.existsSync(copy)) fs.copyFileSync(bundled, copy);
-  return copy;
+  throw new Error("No hay una base temporal disponible en Vercel. Configura MYSQL_URL.");
 }
 
 function loadDatabase() {
+  const context = mysqlRequest.getStore();
+  if (context) return context.data;
+  if (process.env.VERCEL || process.env.MYSQL_URL) {
+    throw new Error("La base de datos solo se puede consultar dentro de una solicitud inicializada.");
+  }
   return JSON.parse(fs.readFileSync(dataFile(), "utf8"));
 }
 
 function write(data) {
+  const context = mysqlRequest.getStore();
+  if (context) {
+    context.data = data;
+    context.dirty = true;
+    return;
+  }
+  if (process.env.VERCEL || process.env.MYSQL_URL) {
+    throw new Error("No se puede guardar fuera de una solicitud inicializada de MySQL.");
+  }
   fs.writeFileSync(dataFile(), JSON.stringify(data, null, 2));
 }
 
@@ -26,6 +42,140 @@ export function readDb() {
 
 export function writeDb(data) {
   write(data);
+}
+
+export function usesMysqlStorage() {
+  return Boolean(process.env.VERCEL || process.env.MYSQL_URL);
+}
+
+async function getMysqlPool() {
+  if (!process.env.MYSQL_URL) {
+    const error = new Error("La base persistente MySQL no está configurada. Define MYSQL_URL en el entorno de despliegue.");
+    error.status = 503;
+    throw error;
+  }
+  if (!mysqlPoolPromise) {
+    mysqlPoolPromise = import("mysql2/promise")
+      .then(({ createPool }) => {
+        const url = new URL(process.env.MYSQL_URL);
+        if (!["mysql:", "mysql2:"].includes(url.protocol)) {
+          throw new Error("MYSQL_URL debe utilizar el protocolo mysql://.");
+        }
+        return createPool({
+          host: url.hostname,
+          port: Number(url.port) || 3306,
+          user: decodeURIComponent(url.username),
+          password: decodeURIComponent(url.password),
+          database: decodeURIComponent(url.pathname.slice(1)),
+          waitForConnections: true,
+          connectionLimit: Math.max(1, Number(process.env.MYSQL_CONNECTION_LIMIT) || 3),
+          maxIdle: 2,
+          idleTimeout: 60000,
+          enableKeepAlive: true,
+          connectTimeout: 10000,
+          ssl: process.env.MYSQL_SSL === "false" ? undefined : { rejectUnauthorized: true },
+        });
+      })
+      .catch((error) => {
+        mysqlPoolPromise = null;
+        throw error;
+      });
+  }
+  const pool = await mysqlPoolPromise;
+  if (!mysqlSchemaPromise) {
+    mysqlSchemaPromise = pool.query(
+      "CREATE TABLE IF NOT EXISTS nexflor_state (id TINYINT UNSIGNED NOT NULL PRIMARY KEY, payload JSON NOT NULL) ENGINE=InnoDB",
+    ).catch((error) => {
+      mysqlSchemaPromise = null;
+      throw error;
+    });
+  }
+  await mysqlSchemaPromise;
+  return pool;
+}
+
+function installResponseCommit(res, connection, context) {
+  const originalEnd = res.end.bind(res);
+  let ending = false;
+
+  res.end = function end(...args) {
+    if (ending) return res;
+    ending = true;
+
+    (async () => {
+      try {
+        if (context.dirty && res.statusCode < 400) {
+          await connection.execute(
+            "UPDATE nexflor_state SET payload = CAST(? AS JSON) WHERE id = 1",
+            [JSON.stringify(context.data)],
+          );
+          await connection.commit();
+        } else {
+          await connection.rollback();
+        }
+      } catch (error) {
+        await connection.rollback().catch(() => {});
+        console.error("MySQL transaction:", error);
+        res.statusCode = error.status || 503;
+        res.removeHeader("Content-Length");
+        res.removeHeader("ETag");
+        res.setHeader("Content-Type", "application/json; charset=utf-8");
+        args = [JSON.stringify({
+          message: error.status ? error.message : "No se pudo guardar en la base de datos.",
+        })];
+      } finally {
+        connection.release();
+        originalEnd(...args);
+      }
+    })();
+
+    return res;
+  };
+}
+
+export async function withDatabaseRequest(_req, res, next) {
+  if (!usesMysqlStorage()) return next();
+
+  let connection;
+  try {
+    const pool = await getMysqlPool();
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+    const [seed] = await connection.execute(
+      "INSERT IGNORE INTO nexflor_state (id, payload) VALUES (1, CAST(? AS JSON))",
+      [fs.readFileSync(bundled, "utf8")],
+    );
+    const [rows] = await connection.query(
+      "SELECT CAST(payload AS CHAR) AS payload FROM nexflor_state WHERE id = 1 FOR UPDATE",
+    );
+    if (!rows.length) throw new Error("La base MySQL no tiene el registro inicial de Nexflor.");
+
+    const payload = rows[0].payload;
+    const context = {
+      data: typeof payload === "string" ? JSON.parse(payload) : payload,
+      dirty: seed.affectedRows > 0,
+    };
+    const [{ ensureAdmin, resetInitialAdminPasswords }, { ensureStaff }, face] = await Promise.all([
+      import("./auth.js"),
+      import("./staff.js"),
+      import("./faceStore.js"),
+    ]);
+    if (seed.affectedRows > 0) resetInitialAdminPasswords();
+
+    installResponseCommit(res, connection, context);
+    mysqlRequest.run(context, () => {
+      ensureAdmin();
+      ensureStaff();
+      face.ensureFace(context.data);
+      next();
+    });
+  } catch (error) {
+    if (connection) {
+      await connection.rollback().catch(() => {});
+      connection.release();
+    }
+    next(error);
+  }
 }
 
 function lessonKey(courseId, lessonId) {

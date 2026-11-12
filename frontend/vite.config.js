@@ -16,7 +16,9 @@ function lanHosts() {
 export default defineConfig(({ command }) => ({
   plugins: [
     react(),
-    ...(command === "serve" ? [basicSsl({ name: "nexflor", domains: lanHosts() })] : []),
+    ...(command === "serve" && process.env.NEXFLOR_HTTPS !== "0"
+      ? [basicSsl({ name: "nexflor", domains: lanHosts() })]
+      : []),
   ],
   server: {
     host: true,

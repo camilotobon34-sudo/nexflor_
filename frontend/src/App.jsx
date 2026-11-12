@@ -9,8 +9,10 @@ import Game from "./pages/Game.jsx";
 import Practice from "./pages/Practice.jsx";
 import Team from "./pages/Team.jsx";
 import Progress from "./pages/Progress.jsx";
+import Posture from "./pages/Posture.jsx";
 import Admin from "./pages/Admin.jsx";
 import Enter from "./pages/Enter.jsx";
+import Face from "./pages/Face.jsx";
 import AdminShortcut from "./components/AdminShortcut.jsx";
 
 function Guard() {
@@ -24,6 +26,8 @@ export default function App() {
     <AdminShortcut />
     <Routes>
       <Route path="entrar" element={<Enter />} />
+      <Route path="id" element={<Face />} />
+      <Route path="ingreso" element={<Face />} />
       <Route path="admin" element={<Admin />} />
       <Route element={<Guard />}>
         <Route index element={<Home />} />
@@ -34,8 +38,7 @@ export default function App() {
         <Route path="practica/:id" element={<Practice />} />
         <Route path="equipo" element={<Team />} />
         <Route path="progreso" element={<Progress />} />
-        <Route path="ingreso" element={<Face />} />
-        <Route path="entrar" element={<Face />} />
+        <Route path="posture" element={<Posture />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

@@ -10,8 +10,8 @@
   "courses": [
     {
       "id": "preparacion-segura",
-      "title": "Las plantas del Trigal",
-      "summary": "Pompón, cremón, spider, hortensia, snapdragon, solidago, trachelium y follaje. También las cuatro sedes: Aguas Claras, Olas, Caribe y Manantiales.",
+      "title": "1. Fundamentos de Cultivo y Variedades en El Trigal",
+      "summary": "Estándares de producción de pompón, cremón, spider, hortensia, solidago y follaje en nuestras sedes de Aguas Claras y Olas.",
       "category": "Cultivo",
       "minutes": 42,
       "level": "Paso 1",
@@ -19,15 +19,15 @@
       "gallery": [
         {
           "image": "/flores/pompon-real.jpg",
-          "caption": "Pompón en punto comercial"
+          "caption": "Pompón en punto comercial óptimo"
         },
         {
           "image": "/flores/camas-magenta.jpg",
-          "caption": "Camas de crisantemo"
+          "caption": "Camas de crisantemo en invernadero"
         },
         {
           "image": "/flores/revision-botones.jpg",
-          "caption": "Revisión del botón"
+          "caption": "Revisión técnica del botón floral"
         }
       ],
       "lessons": [
@@ -51,342 +51,216 @@
         },
         {
           "id": "quimicos",
-          "title": "Las cuatro sedes",
+          "title": "Las cuatro sedes de El Trigal",
           "minutes": 8,
           "kind": "lectura"
-        },
-        {
-          "id": "postura",
-          "title": "Qué se mira antes de cortar",
-          "minutes": 6,
-          "kind": "video"
-        },
-        {
-          "id": "cierre",
-          "title": "Lo que todavía no se corta",
-          "minutes": 7,
-          "kind": "practica"
         }
       ],
       "quiz": [
         {
           "id": "q1",
-          "prompt": "El pompón se reconoce porque…",
+          "prompt": "El pompón comercial se reconoce principalmente porque…",
           "options": [
             {
               "id": "a",
-              "text": "Abre pétalos largos y delgados"
+              "text": "Abre pétalos largos y delgados tipo araña"
             },
             {
               "id": "b",
-              "text": "Es una bola de muchos pétalos"
+              "text": "Forma una inflorescencia densa de muchos pétalos redondeados"
             },
             {
               "id": "c",
-              "text": "Crece en una espiga de abajo hacia arriba"
+              "text": "Crece exclusivamente en racimos silvestres de tallo abierto"
             }
           ],
           "correct": "b"
         },
         {
           "id": "q2",
-          "prompt": "¿Cuál de estas es una sede de El Trigal?",
+          "prompt": "¿Cuál de las siguientes sedes pertenece a Flores El Trigal en El Carmen de Viboral?",
           "options": [
             {
               "id": "a",
-              "text": "Aguas Claras, en El Carmen de Viboral"
+              "text": "Sede Aguas Claras"
             },
             {
               "id": "b",
-              "text": "El Poblado, en Medellín"
+              "text": "Sede El Poblado"
             },
             {
               "id": "c",
-              "text": "El centro de Bogotá"
+              "text": "Sede Centro Norte"
             }
           ],
           "correct": "a"
-        },
-        {
-          "id": "q3",
-          "prompt": "El solidago se usa sobre todo como…",
-          "options": [
-            {
-              "id": "a",
-              "text": "Relleno de varas finas"
-            },
-            {
-              "id": "b",
-              "text": "La flor principal del ramo"
-            },
-            {
-              "id": "c",
-              "text": "El follaje de hoja ancha"
-            }
-          ],
-          "correct": "a"
-        },
-        {
-          "id": "q4",
-          "prompt": "Si el botón todavía está muy cerrado…",
-          "options": [
-            {
-              "id": "a",
-              "text": "Se corta para completar el número"
-            },
-            {
-              "id": "b",
-              "text": "Se abre con la mano"
-            },
-            {
-              "id": "c",
-              "text": "Se deja en la cama"
-            }
-          ],
-          "correct": "c"
         }
       ]
     },
     {
       "id": "herramientas",
-      "title": "Enraizar y sembrar",
-      "summary": "Del esqueje a la cama: sustrato que drene, raíz formada y siembra derecha. Lo que no prende se anota.",
+      "title": "2. Enraizar y Siembra de Esquejes",
+      "summary": "Manejo técnico del esqueje terminal, control del sustrato con drenaje óptimo y siembra vertical en cama.",
       "category": "Campo",
-      "minutes": 28,
+      "minutes": 35,
       "level": "Paso 2",
       "image": "/flores/plantula.jpg",
       "gallery": [
         {
           "image": "/flores/plantula.jpg",
-          "caption": "Plántula lista para la cama"
+          "caption": "Plántula lista para el traslado a cama"
         },
         {
           "image": "/flores/invernadero.jpg",
-          "caption": "Trabajo dentro del invernadero"
+          "caption": "Trazado y densidad de siembra"
         }
       ],
       "lessons": [
         {
           "id": "mapa",
-          "title": "El esqueje",
-          "minutes": 6,
+          "title": "Selección del esqueje terminal",
+          "minutes": 8,
           "kind": "lectura"
         },
         {
           "id": "afilado",
-          "title": "El sustrato",
-          "minutes": 8,
+          "title": "Preparación del sustrato y humedad",
+          "minutes": 9,
           "kind": "video"
         },
         {
           "id": "entrega",
-          "title": "Cuando ya hay raíz",
-          "minutes": 7,
+          "title": "Verificación de raíz formada",
+          "minutes": 9,
           "kind": "practica"
         },
         {
           "id": "reporte",
-          "title": "Sembrar en la cama",
-          "minutes": 7,
+          "title": "Protocolo de siembra derecha",
+          "minutes": 9,
           "kind": "practica"
         }
       ],
       "quiz": [
         {
           "id": "q1",
-          "prompt": "Un esqueje es…",
+          "prompt": "¿Qué característica define a un esqueje apto para siembra?",
           "options": [
             {
               "id": "a",
-              "text": "Un trozo de tallo que todavía debe echar raíz"
+              "text": "Un tallo firme con desarrollo radicular inicial óptimo"
             },
             {
               "id": "b",
-              "text": "Una flor ya abierta para la caja"
+              "text": "Una flor totalmente abierta lista para empaque"
             },
             {
               "id": "c",
-              "text": "Un ramo empacado"
+              "text": "Un tallo leñoso sin hojas"
             }
           ],
           "correct": "a"
         },
         {
           "id": "q2",
-          "prompt": "Si el sustrato queda encharcado…",
+          "prompt": "Si el sustrato de enraizamiento queda encharcado, se genera:",
           "options": [
             {
               "id": "a",
-              "text": "La raíz sale más rápido"
+              "text": "Un crecimiento acelerado de la raíz"
             },
             {
               "id": "b",
-              "text": "La base se pudre"
+              "text": "Pudrición basal del esqueje"
             },
             {
               "id": "c",
-              "text": "No cambia nada"
+              "text": "Mayor retención de nutrientes"
             }
           ],
           "correct": "b"
-        },
-        {
-          "id": "q3",
-          "prompt": "Se pasa a la cama cuando…",
-          "options": [
-            {
-              "id": "a",
-              "text": "El esqueje acaba de llegar, siempre"
-            },
-            {
-              "id": "b",
-              "text": "El cliente lo pide por teléfono"
-            },
-            {
-              "id": "c",
-              "text": "Ya hay raíz formada"
-            }
-          ],
-          "correct": "c"
-        },
-        {
-          "id": "q4",
-          "prompt": "Lo que no prendió…",
-          "options": [
-            {
-              "id": "a",
-              "text": "Se anota"
-            },
-            {
-              "id": "b",
-              "text": "Se esconde entre las plantas buenas"
-            },
-            {
-              "id": "c",
-              "text": "Se manda a empaque"
-            }
-          ],
-          "correct": "a"
         }
       ]
     },
     {
       "id": "higiene",
-      "title": "Riego y cuidado de la cama",
-      "summary": "Agua limpia, riego por goteo a la raíz y desbotone del spider, el cremón y el super mum para que la flor principal crezca.",
+      "title": "3. Riego por Goteo y Desbotone Técnico",
+      "summary": "Aplicación de agua limpia, control de riego localizado a la raíz y desbotone selectivo de inflorescencias.",
       "category": "Campo",
-      "minutes": 24,
+      "minutes": 30,
       "level": "Paso 3",
       "image": "/flores/camas-magenta.jpg",
       "gallery": [
         {
           "image": "/flores/camas-magenta.jpg",
-          "caption": "Camas del invernadero"
+          "caption": "Sistema de riego por goteo en camas"
         },
         {
           "image": "/flores/equipo-campo.jpg",
-          "caption": "El equipo en el cultivo"
+          "caption": "Labores de desbotone y limpieza"
         }
       ],
       "lessons": [
         {
           "id": "baldes",
-          "title": "Agua limpia",
-          "minutes": 6,
+          "title": "Calidad e higiene del agua de riego",
+          "minutes": 7,
           "kind": "practica"
         },
         {
           "id": "agua",
-          "title": "Riego por goteo",
+          "title": "Manejo de líneas de goteo",
           "minutes": 8,
           "kind": "video"
         },
         {
           "id": "panos",
-          "title": "Desbotone",
-          "minutes": 5,
+          "title": "Técnica correcta de desbotone",
+          "minutes": 8,
           "kind": "lectura"
         },
         {
           "id": "manos",
-          "title": "Manos limpias",
-          "minutes": 5,
+          "title": "Bioseguridad e higiene en campo",
+          "minutes": 7,
           "kind": "practica"
         }
       ],
       "quiz": [
         {
           "id": "q1",
-          "prompt": "El riego de la cama llega…",
+          "prompt": "¿Cuál es la función principal del desbotone en crisantemos y cremones?",
           "options": [
             {
               "id": "a",
-              "text": "En un balde sobre las flores"
+              "text": "Concentrar los nutrientes para que la flor principal se desarrolle con máximo calibre"
             },
             {
               "id": "b",
-              "text": "Por goteo, a la raíz"
+              "text": "Eliminar todas las plantas de la cama por completo"
             },
             {
               "id": "c",
-              "text": "Solo cuando llueve"
-            }
-          ],
-          "correct": "b"
-        },
-        {
-          "id": "q2",
-          "prompt": "El desbotone sirve para…",
-          "options": [
-            {
-              "id": "a",
-              "text": "Que la flor principal se desarrolle"
-            },
-            {
-              "id": "b",
-              "text": "Quitar todas las flores de la mata"
-            },
-            {
-              "id": "c",
-              "text": "Secar el tallo"
+              "text": "Acelerar la sequía del tallo"
             }
           ],
           "correct": "a"
         },
         {
-          "id": "q3",
-          "prompt": "El agua turbia de ayer…",
+          "id": "q2",
+          "prompt": "El sistema de riego eficiente implementado en las camas de producción es:",
           "options": [
             {
               "id": "a",
-              "text": "Se rellena y sigue"
+              "text": "Riego por inundación total"
             },
             {
               "id": "b",
-              "text": "Se echa sobre el pompón"
+              "text": "Riego por goteo dirigido a la raíz"
             },
             {
               "id": "c",
-              "text": "No se vuelve a usar"
-            }
-          ],
-          "correct": "c"
-        },
-        {
-          "id": "q4",
-          "prompt": "Si no sabes cuál es el botón principal…",
-          "options": [
-            {
-              "id": "a",
-              "text": "Arrancas el más grande"
-            },
-            {
-              "id": "b",
-              "text": "Preguntas antes de tocar"
-            },
-            {
-              "id": "c",
-              "text": "Cortas la mata completa"
+              "text": "Aspersión abierta nocturna"
             }
           ],
           "correct": "b"
@@ -395,8 +269,8 @@
     },
     {
       "id": "atencion",
-      "title": "Cosechar en el punto justo",
-      "summary": "Se corta la variedad, el color y la apertura que pide la orden. Si esa flor no está lista, se avisa y no se cambia en silencio.",
+      "title": "4. Cosecha en el Punto Óptimo",
+      "summary": "Verificación de apertura floral, cumplimiento de la orden de producción y registro de novedades de corte.",
       "category": "Cosecha",
       "minutes": 35,
       "level": "Paso 4",
@@ -404,126 +278,84 @@
       "gallery": [
         {
           "image": "/flores/revision-botones.jpg",
-          "caption": "Revisión del botón antes del corte"
+          "caption": "Inspección visual del grado de apertura"
         },
         {
           "image": "/flores/cosecha-amarilla.jpg",
-          "caption": "Cosecha en la cama"
-        },
-        {
-          "image": "/flores/equipo-visita.jpg",
-          "caption": "Entre las camas"
+          "caption": "Corte selectivo en la cama"
         }
       ],
       "lessons": [
         {
           "id": "saludo",
-          "title": "El pedido antes del corte",
-          "minutes": 8,
+          "title": "Análisis de la orden y variedad",
+          "minutes": 9,
           "kind": "video"
         },
         {
           "id": "pedido",
-          "title": "El punto de corte",
+          "title": "Identificación del punto exacto de corte",
           "minutes": 9,
           "kind": "practica"
         },
         {
           "id": "faltante",
-          "title": "Si esa variedad no está",
-          "minutes": 8,
+          "title": "Protocolo ante flor no disponible",
+          "minutes": 9,
           "kind": "lectura"
         },
         {
           "id": "cierre-venta",
-          "title": "Contar lo cortado",
-          "minutes": 10,
+          "title": "Conteo y atado de fajos",
+          "minutes": 8,
           "kind": "practica"
         }
       ],
       "quiz": [
         {
           "id": "q1",
-          "prompt": "Antes de cortar se mira…",
+          "prompt": "Antes de realizar el corte en la cama, el operario debe verificar:",
           "options": [
             {
               "id": "a",
-              "text": "La orden: variedad, color y punto"
+              "text": "La variedad, color y estado de apertura exigido en la orden"
             },
             {
               "id": "b",
-              "text": "Solo el color que más hay en la cama"
+              "text": "Únicamente la cantidad de tallos sin importar la apertura"
             },
             {
               "id": "c",
-              "text": "La hora de salida"
+              "text": "La hora exacta del almuerzo"
             }
           ],
           "correct": "a"
         },
         {
           "id": "q2",
-          "prompt": "Una flor pasada o muy cerrada…",
+          "prompt": "Si una variedad requerida aún no presenta el punto de apertura óptimo, se debe:",
           "options": [
             {
               "id": "a",
-              "text": "Se mete al centro del ramo"
+              "text": "Cortar de todas formas y forzar su apertura"
             },
             {
               "id": "b",
-              "text": "No se corta para completar el número"
+              "text": "Reportar la novedad al supervisor y no alterar el estándar"
             },
             {
               "id": "c",
-              "text": "Se abre o se cierra con la mano"
+              "text": "Sustituirla por otra flor sin avisar"
             }
           ],
           "correct": "b"
-        },
-        {
-          "id": "q3",
-          "prompt": "Si el color del pedido no está listo…",
-          "options": [
-            {
-              "id": "a",
-              "text": "Se cambia por otro sin decir nada"
-            },
-            {
-              "id": "b",
-              "text": "Se promete para hoy igual"
-            },
-            {
-              "id": "c",
-              "text": "Se avisa y se deja la novedad"
-            }
-          ],
-          "correct": "c"
-        },
-        {
-          "id": "q4",
-          "prompt": "Al salir de la cama…",
-          "options": [
-            {
-              "id": "a",
-              "text": "Se cuenta lo cortado"
-            },
-            {
-              "id": "b",
-              "text": "Se confía en la memoria"
-            },
-            {
-              "id": "c",
-              "text": "Se mezcla con lo de ayer"
-            }
-          ],
-          "correct": "a"
         }
       ]
     },
     {
       "id": "empaque",
-      "title": "Poscosecha: hidratar y empacar",
-      "summary": "Agua limpia al llegar del campo, ramo etiquetado, cuarto frío y caja seca por dentro hasta el despacho.",
+      "title": "5. Poscosecha, Hidratación y Cuarto Frío",
+      "summary": "Proceso post-corte, soluciones de hidratación, etiquetado de ramos y despacho en caja seca.",
       "category": "Poscosecha",
       "minutes": 30,
       "level": "Paso 5",
@@ -531,35 +363,35 @@
       "gallery": [
         {
           "image": "/flores/cosecha-rosa.jpg",
-          "caption": "Ramo recién cortado"
+          "caption": "Hidratación inmediata tras el corte"
         },
         {
           "image": "/flores/equipo-trigal.jpg",
-          "caption": "Equipo de Flores El Trigal"
+          "caption": "Organización en cuarto frío"
         }
       ],
       "lessons": [
         {
           "id": "base",
-          "title": "Hidratar al llegar",
+          "title": "Hidratación con bactericidas y soluciones",
           "minutes": 8,
           "kind": "video"
         },
         {
           "id": "tarjeta",
-          "title": "Armar y etiquetar",
+          "title": "Confección de ramos y etiquetado BASC",
           "minutes": 7,
           "kind": "practica"
         },
         {
           "id": "ruta",
-          "title": "Cuarto frío y despacho",
+          "title": "Control de temperatura en cuarto frío",
           "minutes": 8,
           "kind": "lectura"
         },
         {
           "id": "novedad",
-          "title": "Caja seca por dentro",
+          "title": "Inspección de caja seca para exportación",
           "minutes": 7,
           "kind": "practica"
         }
@@ -567,177 +399,101 @@
       "quiz": [
         {
           "id": "q1",
-          "prompt": "Al llegar de campo, la flor…",
+          "prompt": "Inmediatamente después de cortar la flor en campo, el paso obligatorio es:",
           "options": [
             {
               "id": "a",
-              "text": "Se deja al sol para que seque"
+              "text": "Llevarla a hidratación en agua limpia con aditivos protectores"
             },
             {
               "id": "b",
-              "text": "Se hidrata en agua limpia"
+              "text": "Dejarla expuesta al sol para evaporar humedad"
             },
             {
               "id": "c",
-              "text": "Se empaca seca, sin beber"
+              "text": "Empacarlas directamente en seco"
             }
           ],
-          "correct": "b"
+          "correct": "a"
         },
         {
           "id": "q2",
-          "prompt": "La etiqueta sirve para…",
+          "prompt": "¿Cuál es la función del cuarto frío en la poscosecha?",
           "options": [
             {
               "id": "a",
-              "text": "Saber qué pedido es"
+              "text": "Congelar los pétalos para fijar el color"
             },
             {
               "id": "b",
-              "text": "Decorar la caja"
+              "text": "Reducir la respiración de la flor y prolongar su vida en florero"
             },
             {
               "id": "c",
-              "text": "Reemplazar el conteo"
+              "text": "Secar los tallos por completo"
             }
           ],
-          "correct": "a"
-        },
-        {
-          "id": "q3",
-          "prompt": "Mientras espera el despacho, la flor va…",
-          "options": [
-            {
-              "id": "a",
-              "text": "Al andén"
-            },
-            {
-              "id": "b",
-              "text": "Encima de otra caja, al sol"
-            },
-            {
-              "id": "c",
-              "text": "Al cuarto frío"
-            }
-          ],
-          "correct": "c"
-        },
-        {
-          "id": "q4",
-          "prompt": "Una caja que gotea por dentro…",
-          "options": [
-            {
-              "id": "a",
-              "text": "Se corrige antes de cerrar"
-            },
-            {
-              "id": "b",
-              "text": "Se manda igual si ya está tarde"
-            },
-            {
-              "id": "c",
-              "text": "Se esconde abajo del pedido"
-            }
-          ],
-          "correct": "a"
+          "correct": "b"
         }
       ]
     },
     {
       "id": "primeros-auxilios",
-      "title": "Cuidarte en el cultivo",
-      "summary": "Tijera, cuchillo y botiquín. Un corte, aunque sea pequeño, se lava, se cubre y se avisa.",
+      "title": "6. Seguridad, Bioseguridad y Ergonomía",
+      "summary": "Uso seguro de herramientas de corte, protocolos ante pequeños incidentes y ergonomía en el invernadero.",
       "category": "Seguridad",
-      "minutes": 18,
+      "minutes": 20,
       "level": "Paso 6",
       "image": "/flores/cosecha-amarilla.jpg",
       "gallery": [
         {
           "image": "/flores/cosecha-amarilla.jpg",
-          "caption": "Herramienta en la cosecha"
+          "caption": "Manipulación segura de herramientas de corte"
         },
         {
           "image": "/flores/equipo-campo.jpg",
-          "caption": "El equipo en campo"
+          "caption": "Pausas activas y posturas de trabajo"
         }
       ],
       "lessons": [
         {
           "id": "botiquin",
-          "title": "Dónde está el botiquín",
-          "minutes": 5,
+          "title": "Ubicación y dotación del botiquín en sede",
+          "minutes": 6,
           "kind": "lectura"
         },
         {
           "id": "corte",
-          "title": "Un corte en la cama o en el mesón",
+          "title": "Protocolo de atención para cortes menores",
           "minutes": 7,
           "kind": "video"
         },
         {
           "id": "aviso",
-          "title": "Avisar y dejar constancia",
-          "minutes": 6,
+          "title": "Reporte de incidentes y ergonomía posturas",
+          "minutes": 7,
           "kind": "practica"
         }
       ],
       "quiz": [
         {
           "id": "q1",
-          "prompt": "El botiquín se busca…",
+          "prompt": "Ante un pequeño corte accidental con la herramienta de trabajo, el procedimiento es:",
           "options": [
             {
               "id": "a",
-              "text": "Cuando ya duele, preguntando por todo el cultivo"
+              "text": "Continuar trabajando sin limpiar para no retrasar la línea"
             },
             {
               "id": "b",
-              "text": "Al llegar, antes de necesitarlo"
+              "text": "Lavar la herida, desinfectar, cubrir con gasa y reportar al botiquín"
             },
             {
               "id": "c",
-              "text": "Solo si el corte es grande"
+              "text": "Ocultar el incidente al equipo de seguridad"
             }
           ],
           "correct": "b"
-        },
-        {
-          "id": "q2",
-          "prompt": "Un corte pequeño se cubre con…",
-          "options": [
-            {
-              "id": "a",
-              "text": "Gasa, después de lavarlo"
-            },
-            {
-              "id": "b",
-              "text": "El paño que se usa en las flores"
-            },
-            {
-              "id": "c",
-              "text": "La mano, para no parar el corte"
-            }
-          ],
-          "correct": "a"
-        },
-        {
-          "id": "q3",
-          "prompt": "Después de cubrir el corte…",
-          "options": [
-            {
-              "id": "a",
-              "text": "Se sigue cortando si el pedido urge"
-            },
-            {
-              "id": "b",
-              "text": "No se dice nada para no preocupar"
-            },
-            {
-              "id": "c",
-              "text": "Se avisa y se anota la hora"
-            }
-          ],
-          "correct": "c"
         }
       ]
     }

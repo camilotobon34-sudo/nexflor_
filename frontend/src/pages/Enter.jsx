@@ -115,6 +115,7 @@ export default function Enter() {
         {error && <p className="status error">{error}</p>}
         <button className="button" type="submit" disabled={busy}>{busy ? "Un momento…" : action}</button>
         <Link to="/admin">Solo el panel de administración</Link>
+        <Link to="/id">Nexflor ID · acceso facial para personal autorizado</Link>
       </form>
     </main>
   );

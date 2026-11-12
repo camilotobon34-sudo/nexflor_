@@ -3,10 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#07130f">
     <title>NEXFLOR — Feria de la ciencia</title>
-    <link rel="stylesheet" href="css/style.css?v=13">
+    <link rel="stylesheet" href="css/style.css?v=27">
 </head>
-<body data-bg="hero">
+<body class="experience-pending" data-bg="hero">
+<section class="experience-gate" id="experienceGate" role="dialog" aria-modal="true" aria-labelledby="experienceTitle">
+    <div class="gate-orbit gate-orbit-one" aria-hidden="true"></div>
+    <div class="gate-orbit gate-orbit-two" aria-hidden="true"></div>
+    <div class="gate-content">
+        <div class="gate-emblem"><span></span><img src="img/logo-nexflor.svg" alt=""></div>
+        <p class="gate-eyebrow">FERIA DE LA CIENCIA · FLORES EL TRIGAL</p>
+        <h1 id="experienceTitle">NEXFLOR<br><span>Conectamos tecnología,<br>conocimiento y bienestar</span></h1>
+        <p class="gate-copy">Una experiencia sobre tecnología, conocimiento y bienestar.</p>
+        <button class="gate-start" id="btnStartExperience" type="button">
+            <span>Iniciar experiencia</span><b aria-hidden="true">↗</b>
+        </button>
+        <p class="gate-hint">Inicia en pantalla completa · Esc para salir · Audio opcional</p>
+    </div>
+    <div class="gate-corner" aria-hidden="true">N / 01</div>
+</section>
 <div class="bg" aria-hidden="true">
     <canvas id="space"></canvas>
     <div class="orb orb-gold"></div>
@@ -16,6 +32,7 @@
 </div>
 
 <div class="viewport">
+<canvas id="sceneWebGL" aria-hidden="true"></canvas>
 <main class="stage" id="stage">
 
 <div class="marks">
@@ -32,18 +49,21 @@
             <p class="slogan">Conectamos tecnología, conocimiento y bienestar</p>
             <p class="sub">Proyecto de innovación tecnológica para Flores El Trigal.</p>
         </div>
-        <img class="cover-photo" src="img/flores/invernadero.jpg" alt="Invernadero de Flores El Trigal">
+        <div class="hero-photo">
+            <img class="cover-photo" src="img/flores/invernadero.jpg" alt="Invernadero de Flores El Trigal">
+            <span class="photo-caption">FLORES EL TRIGAL <i></i> INNOVACIÓN CON PROPÓSITO</span>
+        </div>
     </div>
+    <div class="cover-3d-art" aria-hidden="true"></div>
     <ul class="team">
         <li>Camilo</li>
-        <li>Ada</li>
-        <li>Lopera</li>
-        <li>Emi</li>
+        <li>Luisa</li>
+        <li>Alejandro</li>
+        <li>Emiliano</li>
     </ul>
 </section>
 
-<section class="scene" data-title="Qué queremos mejorar" data-owner="Camilo" data-bg="split">
-    <p class="kicker">Camilo</p>
+<section class="scene" data-title="¿Qué problema queremos mejorar?" data-owner="Camilo" data-bg="split">
     <h1>¿Qué problema queremos mejorar?</h1>
     <div class="cards">
         <article class="card">
@@ -64,23 +84,50 @@
     </div>
 </section>
 
-<section class="scene" data-title="Nuestra solución" data-owner="Ada" data-bg="hero">
-    <p class="kicker">Ada</p>
+<section class="scene solution-scene" data-title="Nuestra solución: NEXFLOR" data-owner="Camilo" data-bg="hero">
+    <p class="kicker">Una propuesta integrada</p>
     <h1>Nuestra solución: NEXFLOR</h1>
     <p class="lede">Identificación, formación y prevención en una sola plataforma.</p>
-    <div class="hub">
-        <div class="core">NEXFLOR<small>un solo sistema</small></div>
-        <svg class="links" viewBox="0 0 1600 36" aria-hidden="true">
-            <path d="M800 0 V16 M800 16 H270 V36 M800 16 H800 V36 M800 16 H1330 V36" fill="none" stroke="#2f6f4e" stroke-width="3"/>
-        </svg>
-        <article class="mod"><em>01</em><h2>NEXFLOR ID</h2><p>Identifica y registra.</p></article>
-        <article class="mod"><em>02</em><h2>NEXFLOR ACADEMY</h2><p>Capacita y evalúa.</p></article>
-        <article class="mod"><em>03</em><h2>NEXFLOR POSTURE</h2><p>Detecta y avisa.</p></article>
+    <div class="solution-map">
+        <div class="solution-core">
+            <div class="solution-logo"><img src="img/logo-nexflor.svg" alt=""></div>
+            <div class="solution-copy">
+                <span class="solution-label">PLATAFORMA INTEGRADA</span>
+                <strong>NEXFLOR</strong>
+                <span class="solution-caption">Tecnología al servicio de las personas</span>
+            </div>
+        </div>
+        <div class="solution-modules">
+            <article class="solution-card id-card">
+                <div class="module-icon" aria-hidden="true">
+                    <svg viewBox="0 0 48 48" fill="none"><rect x="7" y="9" width="34" height="30" rx="8" stroke="currentColor" stroke-width="2.5"/><circle cx="19" cy="21" r="5" stroke="currentColor" stroke-width="2.5"/><path d="M11 34c1.8-4.1 4.5-6 8-6s6.2 1.9 8 6m5-14h4m-4 6h4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+                </div>
+                <span class="module-number">MÓDULO 01</span>
+                <h2>NEXFLOR ID</h2>
+                <p>Identifica y registra a las personas autorizadas.</p>
+            </article>
+            <article class="solution-card academy-card">
+                <div class="module-icon" aria-hidden="true">
+                    <svg viewBox="0 0 48 48" fill="none"><path d="M24 15c-5-4-11-4-17-2v25c6-2 12-2 17 2m0-25c5-4 11-4 17-2v25c-6-2-12-2-17 2m0-25v25" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="m29 22 3 3 6-7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <span class="module-number">MÓDULO 02</span>
+                <h2>NEXFLOR ACADEMY</h2>
+                <p>Capacita con cursos y actividades interactivas.</p>
+            </article>
+            <article class="solution-card posture-card">
+                <div class="module-icon" aria-hidden="true">
+                    <svg viewBox="0 0 48 48" fill="none"><circle cx="25" cy="9" r="4" stroke="currentColor" stroke-width="2.5"/><path d="m22 17 8 5 7 1m-15-6-5 10 7 4 2 11m3-20-4 10 9 3 2 7M12 18l-4 5m30 1 3 5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 7v7h7M41 41v-7h-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <span class="module-number">MÓDULO 03</span>
+                <h2>NEXFLOR POSTURE</h2>
+                <p>Detecta posturas y genera alertas preventivas.</p>
+            </article>
+        </div>
     </div>
 </section>
 
-<section class="scene" data-title="Cómo funciona" data-owner="Ada" data-bg="left">
-    <p class="kicker">Ada · recorrido propuesto</p>
+<section class="scene" data-title="¿Cómo funciona el sistema?" data-owner="Luisa" data-bg="left">
+    <p class="kicker">Recorrido propuesto</p>
     <h1>¿Cómo funciona el sistema?</h1>
     <div class="flow">
         <article class="node"><span>01</span><b>Inicio</b><p>La persona entra a NEXFLOR.</p></article>
@@ -96,12 +143,21 @@
     <p class="note">La capacitación y el monitoreo de postura son funciones distintas. El diagrama muestra el flujo propuesto dentro de NEXFLOR.</p>
 </section>
 
-<section class="scene" data-title="NEXFLOR ID" data-owner="Lopera" data-bg="right">
-    <p class="kicker">Lopera</p>
+<section class="scene" data-title="NEXFLOR ID" data-owner="Luisa" data-bg="right" data-module="id">
     <h1>NEXFLOR ID</h1>
     <p class="lede">Identificación inteligente de personas autorizadas.</p>
     <div class="split">
-        <img class="photo-panel" src="img/flores/equipo-visita.jpg" alt="Equipo en Flores El Trigal">
+        <div class="module-visual biometric-art">
+            <img class="photo-panel" src="img/flores/equipo-visita.jpg" alt="Equipo en Flores El Trigal">
+            <div class="scan-overlay" aria-hidden="true">
+                <i class="scan-corner top-left"></i><i class="scan-corner top-right"></i>
+                <i class="scan-corner bottom-left"></i><i class="scan-corner bottom-right"></i>
+                <i class="scan-target"></i><i class="scan-line"></i>
+                <span class="scan-point point-one"></span><span class="scan-point point-two"></span>
+                <span class="scan-point point-three"></span>
+            </div>
+            <span class="visual-caption">Visualización conceptual · no representa un análisis real</span>
+        </div>
         <div class="concepts">
             <article class="concept"><b>Identificación</b><p>El reconocimiento facial propone reconocer a la persona.</p></article>
             <article class="concept"><b>Registro</b><p>Deja constancia de quién está autorizado, sin depender solo del papel.</p></article>
@@ -110,14 +166,13 @@
     </div>
 </section>
 
-<section class="scene" data-title="NEXFLOR ACADEMY" data-owner="Lopera" data-bg="split">
-    <p class="kicker">Lopera</p>
+<section class="scene" data-title="NEXFLOR ACADEMY" data-owner="Alejandro" data-bg="split" data-module="academy">
     <h1>NEXFLOR ACADEMY</h1>
     <p class="lede">Aprender los procedimientos y comprobarlos jugando.</p>
     <div class="learn">
-        <img src="img/flores/pompon-real.jpg" alt="Pompón del Trigal">
-        <img src="img/flores/hortensia-abierto.jpg" alt="Hortensia del Trigal">
-        <img src="img/flores/cosecha-rosa.jpg" alt="Cosecha en el cultivo">
+        <div class="academy-photo"><img src="img/flores/pompon-real.jpg" alt="Pompón del Trigal"><span>APRENDER</span></div>
+        <div class="academy-photo"><img src="img/flores/hortensia-abierto.jpg" alt="Hortensia del Trigal"><span>EXPLORAR</span></div>
+        <div class="academy-photo"><img src="img/flores/cosecha-rosa.jpg" alt="Cosecha en el cultivo"><span>APLICAR</span></div>
         <div class="seq">
             <article><span>01</span><b>Curso</b></article>
             <article><span>02</span><b>Preguntas</b></article>
@@ -127,12 +182,24 @@
     </div>
 </section>
 
-<section class="scene" data-title="NEXFLOR POSTURE" data-owner="Emi" data-bg="left">
-    <p class="kicker">Emi</p>
+<section class="scene" data-title="NEXFLOR POSTURE" data-owner="Emiliano" data-bg="left" data-module="posture">
     <h1>NEXFLOR POSTURE</h1>
-    <p class="lede">Tecnología para la prevención, no un reemplazo del personal de salud.</p>
+    <p class="lede">Tecnología para la prevención, apoyando la salud en el trabajo.</p>
     <div class="split">
-        <img class="photo-panel" src="img/flores/cosecha-amarilla.jpg" alt="Cosecha en el cultivo">
+        <div class="module-visual posture-art">
+            <img class="photo-panel" src="img/flores/cosecha-amarilla.jpg" alt="Cosecha en el cultivo">
+            <div class="posture-overlay" aria-hidden="true">
+                <svg viewBox="0 0 440 520" fill="none">
+                    <path d="M248 100c-18 0-31 14-31 32s13 31 31 31 31-13 31-31-13-32-31-32Z" />
+                    <path d="m239 168-20 86 48 46 39-69-34-48m-53 70-46 67 33 21 46-56m29-2 17 88 46 24m-94-93 7 91-36 56" />
+                    <path d="m180 256 52 15 68-39M172 338l66 18m43-82 42 19" />
+                    <path class="guide" d="M248 68v376M102 326h258M158 178l176 176" />
+                </svg>
+                <i class="posture-joint joint-one"></i><i class="posture-joint joint-two"></i>
+                <i class="posture-joint joint-three"></i><i class="posture-joint joint-four"></i>
+            </div>
+            <span class="visual-caption">Esquema conceptual · no representa una medición</span>
+        </div>
         <div class="concepts">
             <article class="concept"><b>Detección</b><p>Una cámara y el análisis de imagen pueden marcar ciertas posturas inadecuadas.</p></article>
             <article class="concept"><b>Alerta</b><p>El aviso llama la atención de quien está trabajando.</p></article>
@@ -141,8 +208,7 @@
     </div>
 </section>
 
-<section class="scene" data-title="Qué aporta" data-owner="Emi" data-bg="right">
-    <p class="kicker">Emi</p>
+<section class="scene" data-title="¿Qué aporta NEXFLOR?" data-owner="Emiliano" data-bg="right">
     <h1>¿Qué aporta NEXFLOR?</h1>
     <div class="benefits">
         <article><b>Identificación más organizada</b><p>Un registro apoyado en tecnología, no solo en papel.</p></article>
@@ -156,8 +222,8 @@
     </div>
 </section>
 
-<section class="scene close" data-title="Cierre" data-owner="Emi" data-bg="hero">
-    <img src="img/logo-nexflor.svg" alt="" width="96" height="96">
+<section class="scene close" data-title="Cierre" data-owner="Emiliano" data-bg="hero">
+    <div class="closing-emblem"><span></span><img src="img/logo-nexflor.svg" alt="" width="96" height="96"></div>
     <p class="kicker" style="margin-top:28px">Flores El Trigal</p>
     <h1>NEXFLOR</h1>
     <p class="slogan">Conectamos tecnología, conocimiento y bienestar</p>
@@ -182,10 +248,29 @@
     <button type="button" id="btnNext" title="Siguiente">→</button>
     <button type="button" id="btnMenu" title="Menú (Esc)">≡</button>
     <button type="button" id="btnFullscreen" title="Pantalla completa (F)">⛶</button>
-    <button type="button" id="btnMusic" title="Música (M)">♪</button>
+    <button type="button" id="btnMusic" title="Pausar o reproducir música (M)" aria-label="Reproducir música ambiental" aria-pressed="false">♪</button>
+    <button type="button" id="btnAudioSettings" title="Volumen de audio" aria-label="Abrir controles de volumen" aria-expanded="false">☷</button>
+    <button type="button" id="btnEffects" title="Sonido de cierre (S)" aria-label="Activar sonido del cierre" aria-pressed="false">✧</button>
+    <button type="button" id="btnMuteAll" title="Silenciar todo (V)" aria-label="Silenciar música y efectos">×</button>
 </div>
+<section class="sound-panel" id="soundPanel" aria-label="Controles de audio" hidden>
+    <label class="sound-control" for="musicVolume">
+        <span><b>Música ambiental</b><output id="musicVolumeValue" for="musicVolume">12%</output></span>
+        <input id="musicVolume" type="range" min="0" max="0.35" step="0.01" value="0.12">
+    </label>
+    <label class="sound-control" for="effectsVolume">
+        <span><b>Efectos de interfaz</b><output id="effectsVolumeValue" for="effectsVolume">38%</output></span>
+        <input id="effectsVolume" type="range" min="0" max="0.5" step="0.01" value="0.38">
+    </label>
+    <label class="sound-file" for="musicFile">Pista instrumental local
+        <input id="musicFile" type="file" accept="audio/*">
+    </label>
+    <p>Sin pista grabada incluida. Añade una pista con licencia a <code>presentacion/audio/</code> y selecciónala aquí. Mientras tanto se usa un ambiente sintético suave; no hay pitidos entre diapositivas.</p>
+</section>
 <div class="menu" id="menu"><div class="menu-grid" id="menuGrid"></div></div>
 <div class="toast" id="toast"></div>
-<script src="js/app.js?v=5"></script>
+<audio id="musicTrack" loop preload="none"></audio>
+<script src="js/scene3d.js?v=5"></script>
+<script src="js/app.js?v=16"></script>
 </body>
 </html>

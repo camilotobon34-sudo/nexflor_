@@ -1,7 +1,8 @@
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import { readDb, writeDb } from "./store.js";
 
-const SECRET = process.env.SESSION_SECRET || "serrania-admin-local";
+const SECRET = process.env.SESSION_SECRET || (process.env.VERCEL ? "" : "serrania-admin-local");
+const INITIAL_ADMIN_PASSWORD = process.env.INITIAL_ADMIN_PASSWORD || (process.env.VERCEL ? "" : "12345678");
 const SESSION = 8 * 60 * 60 * 1000;
 const LOCK_MS = 2 * 60 * 1000;
 const MAX_TRIES = 5;
@@ -70,20 +71,50 @@ export function ensureAdmin() {
   db.admins = admins;
   for (const account of ACCOUNTS) {
     if (admins.some((item) => item.id === account.id)) continue;
-    admins.push({ ...account, passwordHash: hashPassword("12345678") });
+    if (!INITIAL_ADMIN_PASSWORD) {
+      const error = new Error("Configura INITIAL_ADMIN_PASSWORD para crear la primera cuenta administradora.");
+      error.status = 503;
+      throw error;
+    }
+    admins.push({ ...account, passwordHash: hashPassword(INITIAL_ADMIN_PASSWORD) });
     changed = true;
   }
   if (changed) writeDb(db);
   return db.admins;
 }
 
+export function resetInitialAdminPasswords() {
+  const password = String(process.env.INITIAL_ADMIN_PASSWORD || "");
+  if (password.length < 16) {
+    const error = new Error("INITIAL_ADMIN_PASSWORD debe tener al menos 16 caracteres antes de inicializar MySQL.");
+    error.status = 503;
+    throw error;
+  }
+  const db = readDb();
+  db.admins = (Array.isArray(db.admins) ? db.admins : []).map((account) => ({
+    ...account,
+    passwordHash: hashPassword(password),
+  }));
+  writeDb(db);
+}
+
 function sign(role, id) {
+  if (!SECRET) {
+    const error = new Error("Configura SESSION_SECRET antes de habilitar sesiones en producción.");
+    error.status = 503;
+    throw error;
+  }
   const body = `${role}.${id}.${Date.now() + SESSION}`;
   const sig = createHmac("sha256", SECRET).update(body).digest("hex");
   return `${body}.${sig}`;
 }
 
+export function createSession(role, id) {
+  return sign(role, id);
+}
+
 export function readSession(token) {
+  if (!SECRET) return null;
   const parts = String(token || "").split(".");
   if (parts.length !== 4) return null;
   const [role, id, exp, sig] = parts;
@@ -92,7 +123,7 @@ export function readSession(token) {
   const a = Buffer.from(String(sig));
   const b = Buffer.from(expected);
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
-  if ((role !== "admin" && role !== "worker") || Number(exp) <= Date.now()) return null;
+  if (!["admin", "worker", "scanner"].includes(role) || Number(exp) <= Date.now()) return null;
   return { role, id };
 }
 

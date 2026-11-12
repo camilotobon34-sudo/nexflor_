@@ -16,11 +16,12 @@ export default function Face() {
   if (!session.token) {
     return (
       <section className="page face-page">
-        <div className="page-head">
+        <div className="face-intro">
+          <div className="face-intro-mark" aria-hidden="true">ID</div>
           <div>
-            <p className="eyebrow">Control de acceso</p>
-            <h1>Reconocimiento facial</h1>
-            <p>Entra con la cuenta del personal autorizado. Desde aquí se registra y se escanea. Los reportes están en el panel de administración.</p>
+            <p className="eyebrow">Identidad y acceso seguro</p>
+            <h1>Nexflor ID</h1>
+            <p>Acceso facial integrado en Nexflor. El personal autorizado puede registrar un rostro o verificar su ingreso; el administrador gestiona permisos y reportes.</p>
           </div>
         </div>
         <StaffLogin onDone={(body) => { saveSession(body); setSession(readSession()); }} />
@@ -42,7 +43,7 @@ function StaffLogin({ onDone }) {
     setBusy(true);
     setError("");
     try {
-      const body = await api("/admin/login", {
+      const body = await api("/staff/login", {
         method: "POST",
         body: JSON.stringify({ username, password }),
       });
@@ -56,8 +57,15 @@ function StaffLogin({ onDone }) {
 
   return (
     <form className="card staff-login" onSubmit={submit}>
-      <label>Usuario<input value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" /></label>
-      <label>Contraseña<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" /></label>
+      <div className="staff-login-heading">
+        <span className="face-status-dot" aria-hidden="true" />
+        <div>
+          <h2>Personal autorizado</h2>
+          <p>Inicia sesión para continuar al escáner.</p>
+        </div>
+      </div>
+      <label>Usuario<input value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required /></label>
+      <label>Contraseña<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required /></label>
       {error && <p className="status error">{error}</p>}
       <button className="button" type="submit" disabled={busy}>{busy ? "Entrando…" : "Entrar para escanear"}</button>
     </form>
@@ -181,6 +189,7 @@ function Scanner({ token, name, onLogout }) {
       setResult(null);
     } finally {
       setPhase("listo");
+      stopCamera();
     }
   }
 
@@ -205,9 +214,9 @@ function Scanner({ token, name, onLogout }) {
     <section className="page face-page">
       <div className="page-head">
         <div>
-          <p className="eyebrow">Control de acceso</p>
-          <h1>Reconocimiento facial</h1>
-          <p>La cámara frontal toma unas imágenes y el servidor decide si el ingreso queda permitido. No es una garantía absoluta contra fotos o videos.</p>
+          <p className="eyebrow">Identidad y acceso seguro</p>
+          <h1>Nexflor ID</h1>
+          <p>Centra el rostro en la guía para registrar tu identidad o verificar el ingreso. La decisión de acceso se confirma en el servidor.</p>
         </div>
         <button type="button" onClick={onLogout}>Salir{name ? ` · ${name}` : ""}</button>
       </div>
@@ -223,24 +232,27 @@ function Scanner({ token, name, onLogout }) {
       <div className="face-layout">
         <section className="card scanner">
           <div className="chips">
-            <button type="button" className={mode === "ingreso" ? "on" : ""} onClick={() => { setMode("ingreso"); setResult(null); }}>Ya estoy registrado</button>
-            <button type="button" className={mode === "registro" ? "on" : ""} onClick={() => { setMode("registro"); setResult(null); }}>Primera vez</button>
+            <button type="button" className={mode === "ingreso" ? "on" : ""} onClick={() => { setMode("ingreso"); setResult(null); }}>Verificar ingreso</button>
+            <button type="button" className={mode === "registro" ? "on" : ""} onClick={() => { setMode("registro"); setResult(null); }}>Registrar rostro</button>
           </div>
           <div className={`viewport ${phase === "escaneando" ? "scanning" : ""}`}>
             <video ref={videoRef} autoPlay playsInline muted />
+            <div className={`face-frame${cameraOn ? " active" : ""}`} aria-hidden="true"><span /></div>
+            <span className={`camera-state${cameraOn ? " live" : ""}`}><span />{cameraOn ? "Cámara activa" : "Cámara en espera"}</span>
             {!cameraOn && <p>La cámara aparece cuando inicias el escaneo.</p>}
-            {phase === "escaneando" && <span className="scan-flag">Escaneando el rostro… parpadea</span>}
+            {phase === "escaneando" && <span className="scan-flag">Verificando rostro…</span>}
           </div>
           <label className="consent">
             <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} />
-            <span>{status?.consent}</span>
+            <span>{status?.consent || "Acepto el uso de mi imagen para verificar o registrar mi identidad mediante Nexflor ID."}</span>
           </label>
+          <p className="face-hint">Tu cámara solo se activa cuando aceptas y presionas iniciar. Puedes retirar el permiso desde tu navegador.</p>
           {mode === "registro" && (
             <div className="face-form">
-              <label>Nombre completo<input value={form.fullName} onChange={(event) => setForm({ ...form, fullName: event.target.value })} /></label>
-              <label>Identificación<input value={form.documentId} onChange={(event) => setForm({ ...form, documentId: event.target.value })} /></label>
-              <label>Cargo<input value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })} /></label>
-              <label>Correo<input value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /></label>
+              <label>Nombre completo<input value={form.fullName} onChange={(event) => setForm({ ...form, fullName: event.target.value })} required /></label>
+              <label>Identificación<input value={form.documentId} onChange={(event) => setForm({ ...form, documentId: event.target.value })} required /></label>
+              <label>Cargo<input value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })} required /></label>
+              <label>Correo<input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /></label>
               <p className="muted">La fecha de registro la guarda el servidor. El estado inicial es pendiente.</p>
             </div>
           )}
@@ -248,7 +260,7 @@ function Scanner({ token, name, onLogout }) {
           {error && <p className="status error">{error}</p>}
           {result && <p className={`face-result ${tone}`}>{result.message}{result.name && result.access === "permitido" ? ` ${result.name}.` : ""}</p>}
           <div className="face-actions">
-            <button className="button" type="button" onClick={scan} disabled={phase === "escaneando"}>
+            <button className="button" type="button" onClick={scan} disabled={phase === "escaneando" || !consent}>
               {phase === "escaneando" ? "Escaneando…" : "Iniciar escaneo"}
             </button>
             <button type="button" onClick={() => { setResult(null); setError(""); }}>Volver a intentar</button>
@@ -256,7 +268,7 @@ function Scanner({ token, name, onLogout }) {
         </section>
 
         <section className="card">
-          <h2>Si no puedes usar la cámara</h2>
+          <h2>¿No puedes usar la cámara?</h2>
           <p>Un administrador puede entregarte un código. Ese código también lo comprueba el servidor y no autoriza a quien esté pendiente, rechazado o suspendido.</p>
           <form className="face-form" onSubmit={sendCode}>
             <label>Identificación<input value={code.documentId} onChange={(event) => setCode({ ...code, documentId: event.target.value })} /></label>

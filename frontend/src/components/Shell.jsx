@@ -7,7 +7,8 @@ const links = [
   { to: "/practica/preparacion-segura", label: "Práctica", icon: CheckIcon },
   { to: "/equipo", label: "Equipo", icon: PeopleIcon },
   { to: "/progreso", label: "Progreso", icon: ChartIcon },
-  { to: "/entrar", label: "Acceso", icon: FaceIcon },
+  { to: "/posture", label: "Nexflor Posture", icon: PostureIcon },
+  { to: "/id", label: "Nexflor ID", icon: FaceIcon },
 ];
 
 export default function Shell() {
@@ -126,6 +127,15 @@ function ChartIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M5 19V9M10 19V5M15 19v-7M20 19V8" />
+    </svg>
+  );
+}
+function PostureIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="5" r="2.6" />
+      <path d="M8.5 9.5c1.2-1.5 2.2-2.2 3.5-2.2s2.3.7 3.5 2.2l1.2 3.8c.2.7.3 1.4.3 2.1v1.5H7V15.5c0-.7.1-1.4.3-2.1z" />
+      <path d="M12 11.5v4.5M9.5 15.5h5" />
     </svg>
   );
 }

@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { readDb, writeDb } from "./store.js";
+import { readDb, usesMysqlStorage, writeDb } from "./store.js";
 
 const uploadsDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "../uploads");
 
@@ -184,6 +184,9 @@ export function removePerson(id) {
 }
 
 export function listFiles() {
+  if (usesMysqlStorage()) {
+    return (readDb().uploads || []).map(({ name }) => ({ name, url: `/api/uploads/${encodeURIComponent(name)}` }));
+  }
   fs.mkdirSync(uploadsDir, { recursive: true });
   return fs.readdirSync(uploadsDir)
     .filter((name) => fs.statSync(path.join(uploadsDir, name)).isFile())
@@ -197,6 +200,13 @@ export function saveFile(name, dataUrl) {
   if (buffer.length > 3 * 1024 * 1024) fail("La imagen pesa más de 3 MB.");
   const ext = match[1].split("/")[1].replace("jpeg", "jpg");
   const safe = `${slug(path.parse(name || "imagen").name)}-${Date.now()}.${ext}`;
+  if (usesMysqlStorage()) {
+    const db = readDb();
+    if (!Array.isArray(db.uploads)) db.uploads = [];
+    db.uploads.push({ name: safe, type: match[1], data: buffer.toString("base64") });
+    writeDb(db);
+    return { name: safe, url: `/api/uploads/${encodeURIComponent(safe)}` };
+  }
   fs.mkdirSync(uploadsDir, { recursive: true });
   fs.writeFileSync(path.join(uploadsDir, safe), buffer);
   return { name: safe, url: `/api/uploads/${safe}` };
@@ -204,11 +214,34 @@ export function saveFile(name, dataUrl) {
 
 export function removeFile(name) {
   const safe = path.basename(name);
+  if (usesMysqlStorage()) {
+    const db = readDb();
+    const index = (db.uploads || []).findIndex((file) => file.name === safe);
+    if (index < 0) fail("Ese archivo no está.", 404);
+    db.uploads.splice(index, 1);
+    writeDb(db);
+    return { ok: true };
+  }
   const root = path.resolve(uploadsDir);
   const target = path.resolve(uploadsDir, safe);
   if (!target.startsWith(`${root}${path.sep}`) || !fs.existsSync(target)) fail("Ese archivo no está.", 404);
   fs.unlinkSync(target);
   return { ok: true };
+}
+
+export function readFile(name) {
+  const safe = path.basename(name);
+  if (usesMysqlStorage()) {
+    const file = (readDb().uploads || []).find((item) => item.name === safe);
+    return file ? { type: file.type, data: Buffer.from(file.data, "base64") } : null;
+  }
+  const target = path.resolve(uploadsDir, safe);
+  const root = path.resolve(uploadsDir);
+  if (!target.startsWith(`${root}${path.sep}`) || !fs.existsSync(target)) return null;
+  return {
+    type: `image/${path.extname(safe).slice(1).replace("jpg", "jpeg")}`,
+    data: fs.readFileSync(target),
+  };
 }
 
 export { uploadsDir };

@@ -236,9 +236,9 @@ export default function FaceAdmin({ token }) {
           ))}
         </ul>
         <form className="face-form" onSubmit={saveStaff}>
-          <label>Nombre<input value={account.name} onChange={(event) => setAccount({ ...account, name: event.target.value })} /></label>
-          <label>Usuario<input value={account.username} onChange={(event) => setAccount({ ...account, username: event.target.value })} autoComplete="off" /></label>
-          <label>Contraseña<input type="password" value={account.password} onChange={(event) => setAccount({ ...account, password: event.target.value })} autoComplete="new-password" /></label>
+          <label>Nombre<input value={account.name} onChange={(event) => setAccount({ ...account, name: event.target.value })} minLength={3} required /></label>
+          <label>Usuario<input value={account.username} onChange={(event) => setAccount({ ...account, username: event.target.value })} autoComplete="off" minLength={3} required /></label>
+          <label>Contraseña<input type="password" value={account.password} onChange={(event) => setAccount({ ...account, password: event.target.value })} autoComplete="new-password" minLength={12} required /></label>
           <button className="button" type="submit">Crear cuenta de escaneo</button>
         </form>
       </section>

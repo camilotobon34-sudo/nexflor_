@@ -3,30 +3,56 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import * as store from "./store.js";
+import { usesMysqlStorage, withDatabaseRequest } from "./store.js";
 import { ensureAdmin, loginAdmin, loginWorker, registerWorker, readSession, verifyAdmin } from "./auth.js";
 import * as admin from "./admin.js";
 import * as face from "./faceStore.js";
 import { analyzeFrames, engineStatus, startEngine } from "./faceEngine.js";
+import { createStaff, ensureStaff, isActiveStaff, listStaff, loginStaff, setStaffActive } from "./staff.js";
 
 const app = express();
 const port = process.env.PORT || 4000;
 const frontendDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../frontend/dist");
 
-ensureAdmin();
-ensureStaff();
-face.ensureFace();
+if (!usesMysqlStorage()) {
+  ensureAdmin();
+  ensureStaff();
+  face.ensureFace();
+}
 startEngine();
 
 app.use(cors());
 app.use(express.json({ limit: "6mb" }));
 app.use("/api/uploads", express.static(admin.uploadsDir));
+app.use("/api", withDatabaseRequest);
+
+app.get("/api/uploads/:name", (req, res, next) => {
+  try {
+    const file = admin.readFile(req.params.name);
+    if (!file) return res.status(404).json({ message: "Ese archivo no está." });
+    res.type(file.type).send(file.data);
+  } catch (error) {
+    next(error);
+  }
+});
 
 function tokenOf(req) {
   return String(req.headers.authorization || "").replace(/^Bearer\s+/i, "").trim();
 }
 
 function requireAdmin(req, res, next) {
-  if (!verifyAdmin(tokenOf(req))) return res.status(401).json({ message: "Entra como administrador." });
+  const session = readSession(tokenOf(req));
+  if (!session || !verifyAdmin(tokenOf(req))) return res.status(401).json({ message: "Entra como administrador." });
+  req.session = session;
+  next();
+}
+
+function requireScanner(req, res, next) {
+  const session = readSession(tokenOf(req));
+  if (!session || (session.role !== "admin" && (session.role !== "scanner" || !isActiveStaff(session.id)))) {
+    return res.status(401).json({ message: "Entra con una cuenta autorizada para escanear." });
+  }
+  req.session = session;
   next();
 }
 
@@ -57,6 +83,50 @@ app.post("/api/workers/login", (req, res) => {
   } catch (error) {
     res.status(error.status || 500).json({ message: error.message || "No se pudo entrar." });
   }
+});
+
+app.post("/api/staff/login", (req, res) => {
+  try {
+    res.json(loginStaff(req.body?.username, req.body?.password));
+  } catch (error) {
+    res.status(error.status || 500).json({ message: error.message || "No se pudo entrar." });
+  }
+});
+
+app.use("/api/face", requireScanner);
+
+app.get("/api/face/status", (_req, res) => {
+  const summary = face.summary();
+  const engine = engineStatus();
+  res.json({
+    ...summary,
+    modelReady: engine.ready,
+    engine: engine.ready ? "server" : "browser",
+    notice: engine.ready ? "" : "El reconocimiento se procesa en el navegador y el servidor valida el resultado.",
+    consent: face.CONSENT_TEXT,
+  });
+});
+
+app.post("/api/face/verify", async (req, res, next) => {
+  try {
+    const reading = Array.isArray(req.body?.frames) && engineStatus().ready
+      ? await analyzeFrames(req.body.frames)
+      : req.body;
+    res.json(face.verifyFace(reading || {}, req.session.id));
+  } catch (error) { next(error); }
+});
+
+app.post("/api/face/register", async (req, res, next) => {
+  try {
+    const reading = Array.isArray(req.body?.frames) && engineStatus().ready
+      ? await analyzeFrames(req.body.frames)
+      : req.body;
+    res.status(201).json(face.registerPerson({ ...req.body, ...(reading || {}) }, req.session.id));
+  } catch (error) { next(error); }
+});
+
+app.post("/api/face/code", (req, res, next) => {
+  try { res.json(face.verifyCode(req.body || {}, req.session.id)); } catch (error) { next(error); }
 });
 
 app.use("/api/admin", requireAdmin);
@@ -151,19 +221,19 @@ app.post("/api/admin/face/alerts/:id/review", (req, res, next) => {
 });
 
 app.post("/api/admin/face/people/:id/approve", (req, res, next) => {
-  try { res.json(face.approvePerson(req.params.id, req.session.username)); } catch (error) { next(error); }
+  try { res.json(face.approvePerson(req.params.id, req.session.id)); } catch (error) { next(error); }
 });
 
 app.post("/api/admin/face/people/:id/reject", (req, res, next) => {
-  try { res.json(face.rejectPerson(req.params.id, req.session.username)); } catch (error) { next(error); }
+  try { res.json(face.rejectPerson(req.params.id, req.session.id)); } catch (error) { next(error); }
 });
 
 app.post("/api/admin/face/people/:id/suspend", (req, res, next) => {
-  try { res.json(face.suspendPerson(req.params.id, req.session.username)); } catch (error) { next(error); }
+  try { res.json(face.suspendPerson(req.params.id, req.session.id)); } catch (error) { next(error); }
 });
 
 app.post("/api/admin/face/people/:id/reactivate", (req, res, next) => {
-  try { res.json(face.reactivatePerson(req.params.id, req.session.username)); } catch (error) { next(error); }
+  try { res.json(face.reactivatePerson(req.params.id, req.session.id)); } catch (error) { next(error); }
 });
 
 app.post("/api/admin/face/people/:id/code", (req, res, next) => {
