@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api.js";
 import { clearSession, readSession, saveSession, TOKEN_KEY } from "../session.js";
@@ -117,6 +117,9 @@ function Login({ onToken }) {
 function Panel({ token, data, setData, error, setError, logout }) {
   const [tab, setTab] = useState("cursos");
   const [selected, setSelected] = useState("");
+  const [pendingFaceAlerts, setPendingFaceAlerts] = useState(0);
+  const [entryNotice, setEntryNotice] = useState(null);
+  const seenFaceAlerts = useRef(null);
 
   async function load() {
     try {
@@ -132,6 +135,37 @@ function Panel({ token, data, setData, error, setError, logout }) {
 
   useEffect(() => { load(); }, [token]);
 
+  useEffect(() => {
+    let active = true;
+    let requesting = false;
+    const refreshAlerts = async () => {
+      if (requesting) return;
+      requesting = true;
+      try {
+        const attendance = await adminApi("/admin/face/attendance", token);
+        const alerts = attendance.alerts || [];
+        if (seenFaceAlerts.current) {
+          const newEntry = alerts
+            .filter((alert) => alert.kind === "ingreso" && !seenFaceAlerts.current.has(alert.id))
+            .sort((left, right) => right.at - left.at)[0];
+          if (newEntry && active) setEntryNotice(newEntry);
+        }
+        seenFaceAlerts.current = new Set(alerts.map((alert) => alert.id));
+        if (active) setPendingFaceAlerts(alerts.length);
+      } catch (requestError) {
+        if (active) setError(requestError.message);
+      } finally {
+        requesting = false;
+      }
+    };
+    void refreshAlerts();
+    const timer = window.setInterval(() => { void refreshAlerts(); }, 8000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [setError, token]);
+
   const course = data?.courses.find((item) => item.id === selected);
 
   return (
@@ -146,10 +180,16 @@ function Panel({ token, data, setData, error, setError, logout }) {
           <button type="button" onClick={logout}>Salir</button>
         </div>
       </header>
+      {entryNotice && (
+        <div className="status" role="alert" aria-live="assertive">
+          Nuevo ingreso: {entryNotice.name} · {new Date(entryNotice.at).toLocaleString("es-CO")}
+          <button type="button" className="button" onClick={() => { setTab("ingreso"); setEntryNotice(null); }}>Ver asistencia</button>
+        </div>
+      )}
       <div className="chips">
         {[["cursos", "Cursos"], ["equipo", "Equipo"], ["archivos", "Archivos"], ["ingreso", "Asistencia"]].map(([item, label]) => (
           <button key={item} type="button" className={tab === item ? "on" : ""} onClick={() => setTab(item)}>
-            {label}
+            {item === "ingreso" && pendingFaceAlerts > 0 ? `${label} (${pendingFaceAlerts})` : label}
           </button>
         ))}
       </div>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../api.js";
 
 function adminApi(path, token, options = {}) {
@@ -22,16 +22,27 @@ export default function FaceAdmin({ token }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [newCode, setNewCode] = useState("");
+  const seenAlerts = useRef(null);
 
-  const reload = useCallback(async () => {
-    setLoading(true);
-    setError("");
+  const reload = useCallback(async (silent = false) => {
+    if (!silent) {
+      setLoading(true);
+      setError("");
+    }
     try {
       const [nextPeople, nextAttendance, nextStaff] = await Promise.all([
         adminApi("/admin/face/people", token),
         adminApi("/admin/face/attendance", token),
         adminApi("/admin/staff", token),
       ]);
+      const alerts = nextAttendance.alerts || [];
+      if (seenAlerts.current) {
+        const newEntry = alerts
+          .filter((alert) => alert.kind === "ingreso" && !seenAlerts.current.has(alert.id))
+          .sort((left, right) => right.at - left.at)[0];
+        if (newEntry) setNotice(`Nuevo ingreso: ${newEntry.name} · ${dateTime(newEntry.at)}`);
+      }
+      seenAlerts.current = new Set(alerts.map((alert) => alert.id));
       setPeople(nextPeople);
       setAttendance(nextAttendance);
       setStaff(nextStaff);
@@ -42,7 +53,11 @@ export default function FaceAdmin({ token }) {
     }
   }, [token]);
 
-  useEffect(() => { reload(); }, [reload]);
+  useEffect(() => {
+    void reload();
+    const timer = window.setInterval(() => { void reload(true); }, 8000);
+    return () => window.clearInterval(timer);
+  }, [reload]);
 
   async function submitStaff(event) {
     event.preventDefault();
@@ -83,6 +98,23 @@ export default function FaceAdmin({ token }) {
       {error && <p className="status error" role="alert">{error}</p>}
       {notice && <p className="status" role="status">{notice}</p>}
       {newCode && <p className="rounded-lg bg-amber-100 p-3 text-sm text-amber-950" role="status">{newCode}. Cópialo ahora; no se volverá a mostrar.</p>}
+
+      {attendance?.alerts?.length > 0 && (
+        <section className="card border-l-4 border-emerald-500" aria-label="Alertas pendientes">
+          <h2>Alertas para el administrador ({attendance.alerts.length})</h2>
+          <ul className="mt-3 divide-y">
+            {attendance.alerts.map((alert) => (
+              <li key={alert.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <div>
+                  <strong>{alert.kind === "ingreso" ? `${alert.name} ingresó` : alert.kind === "suplantacion" ? "Posible intento de suplantación" : `Intentos fallidos · ${alert.name}`}</strong>
+                  <p className="text-sm text-slate-600">{alert.documentId || "Sin identificación"} · {dateTime(alert.at)}{alert.reason ? ` · ${alert.reason}` : ""}</p>
+                </div>
+                <button type="button" disabled={busy} className="button" onClick={() => action(`/admin/face/alerts/${alert.id}/review`, { method: "POST" }, "Alerta revisada.")}>Marcar revisada</button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="card">
         <div className="flex items-center justify-between gap-3">

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api.js";
 import { clearSession, readSession, saveSession } from "../session.js";
@@ -102,21 +102,30 @@ function stopStream(stream) {
 export default function Face() {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  const cameraStartRef = useRef(null);
+  const cameraRequestId = useRef(0);
+  const verificationRef = useRef(false);
+  const waitingForPersonToLeave = useRef(false);
+  const emptyFrameCount = useRef(0);
   const [session, setSession] = useState(readSession);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [mode, setMode] = useState("register");
+  const [mode, setMode] = useState("verify");
   const [person, setPerson] = useState({ fullName: "", documentId: "", role: "Trabajador Operativo", email: "" });
   const [code, setCode] = useState({ documentId: "", pin: "" });
   const [engine, setEngine] = useState(null);
   const [modelState, setModelState] = useState("loading");
+  const [cameraReady, setCameraReady] = useState(false);
+  const [scanState, setScanState] = useState("preparing");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
   const authorized = session.token && ["admin", "scanner"].includes(session.role);
 
-  useEffect(() => () => stopStream(streamRef.current), []);
+  useEffect(() => () => {
+    stopStream(streamRef.current);
+  }, []);
 
   useEffect(() => {
     if (!authorized) return undefined;
@@ -178,9 +187,13 @@ export default function Face() {
   }
 
   function logout() {
+    cameraRequestId.current += 1;
+    cameraStartRef.current = null;
     stopStream(streamRef.current);
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
+    setCameraReady(false);
+    setScanState("preparing");
     clearSession();
     setSession(readSession());
     setEngine(null);
@@ -188,21 +201,55 @@ export default function Face() {
     setMessage("");
   }
 
-  async function startCamera() {
+  const startCamera = useCallback(async () => {
     setError("");
     setMessage("");
-    try {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error("Este navegador no permite abrir la cámara. Usa una conexión HTTPS.");
-      }
-      stopStream(streamRef.current);
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
-      streamRef.current = stream;
-      if (videoRef.current) videoRef.current.srcObject = stream;
-    } catch (cameraError) {
-      setError(cameraError.message || "No se pudo abrir la cámara. Revisa sus permisos.");
+    if (streamRef.current?.active && videoRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      setCameraReady(true);
+      return;
     }
-  }
+    if (cameraStartRef.current) return cameraStartRef.current;
+
+    const requestId = cameraRequestId.current + 1;
+    cameraRequestId.current = requestId;
+    const request = (async () => {
+      setCameraReady(false);
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error("Este navegador no permite abrir la cámara. Usa una conexión HTTPS.");
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+        if (requestId !== cameraRequestId.current) {
+          stopStream(stream);
+          return;
+        }
+        if (!videoRef.current) {
+          stopStream(stream);
+          throw new Error("No se pudo preparar la cámara. Vuelve a intentarlo.");
+        }
+        streamRef.current = stream;
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+        setCameraReady(true);
+      } catch (cameraError) {
+        setCameraReady(false);
+        setError(cameraError.message || "No se pudo abrir la cámara. Revisa sus permisos.");
+      }
+    })();
+    cameraStartRef.current = request;
+    await request;
+    if (cameraStartRef.current === request) cameraStartRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    if (authorized) {
+      void startCamera();
+    } else {
+      setCameraReady(false);
+      setScanState("preparing");
+    }
+  }, [authorized, startCamera]);
 
   async function captureFrames() {
     const video = videoRef.current;
@@ -247,6 +294,8 @@ export default function Face() {
   }
 
   async function verifyFace() {
+    if (verificationRef.current) return;
+    verificationRef.current = true;
     setBusy(true);
     setError("");
     setMessage("");
@@ -262,6 +311,7 @@ export default function Face() {
       setError(requestError.message);
     } finally {
       setBusy(false);
+      verificationRef.current = false;
     }
   }
 
@@ -283,6 +333,66 @@ export default function Face() {
       setBusy(false);
     }
   }
+
+  useEffect(() => {
+    if (!authorized || mode !== "verify" || !cameraReady || modelState !== "ready") {
+      if (authorized && mode === "verify") setScanState("preparing");
+      return undefined;
+    }
+
+    let active = true;
+    let timer;
+    const inspect = async () => {
+      if (!active) return;
+      const video = videoRef.current;
+      if (!video || video.readyState < 2) {
+        setScanState("preparing");
+        timer = window.setTimeout(inspect, 800);
+        return;
+      }
+
+      try {
+        const faceapi = await loadFaceApi();
+        const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 });
+        const faces = await faceapi.detectAllFaces(video, options);
+        if (waitingForPersonToLeave.current) {
+          if (faces.length === 0) {
+            emptyFrameCount.current += 1;
+            if (emptyFrameCount.current >= 3) {
+              waitingForPersonToLeave.current = false;
+              emptyFrameCount.current = 0;
+              setScanState("waiting");
+            }
+          } else {
+            emptyFrameCount.current = 0;
+          }
+        } else if (faces.length === 1 && !verificationRef.current) {
+          waitingForPersonToLeave.current = true;
+          emptyFrameCount.current = 0;
+          setScanState("capturing");
+          await verifyFace();
+          if (active) setScanState("done");
+        } else if (faces.length > 1) {
+          setScanState("multiple");
+        } else if (faces.length === 0) {
+          setScanState("waiting");
+        }
+      } catch (scanError) {
+        if (active) {
+          setError(scanError.message);
+          setScanState("error");
+        }
+      } finally {
+        if (active) timer = window.setTimeout(inspect, 900);
+      }
+    };
+
+    void inspect();
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [authorized, cameraReady, engine?.modelReady, mode, modelState, session.token]);
 
   if (!authorized) {
     return (
@@ -344,9 +454,21 @@ export default function Face() {
         </div>
 
         <div className="space-y-3">
-          <button type="button" onClick={startCamera} className="rounded-lg bg-blue-600 hover:bg-blue-500 px-4 py-2 text-sm font-semibold">Encender cámara</button>
+          {!cameraReady && <button type="button" onClick={startCamera} className="rounded-lg bg-blue-600 hover:bg-blue-500 px-4 py-2 text-sm font-semibold">Activar cámara</button>}
           <video ref={videoRef} autoPlay playsInline muted className="w-full max-h-80 rounded-xl bg-black object-cover" aria-label="Vista previa de cámara" />
-          <p className="text-xs text-slate-400">Cuando captures, parpadea o mueve un poco la cabeza durante los segundos de lectura.</p>
+          <p className="text-sm text-slate-300" role="status" aria-live="polite">
+            {!cameraReady
+              ? "Esperando permiso de cámara…"
+              : modelState !== "ready"
+                ? "Preparando el reconocimiento facial…"
+                : scanState === "capturing"
+                  ? "Rostro detectado. Verificando el ingreso…"
+                  : scanState === "multiple"
+                    ? "Debe aparecer una sola persona frente a la cámara."
+                    : scanState === "done"
+                      ? "Verificación lista. Retira el rostro para registrar el siguiente ingreso."
+                      : "Cámara activa. Mira a la cámara y parpadea o mueve un poco la cabeza; el ingreso se registrará automáticamente."}
+          </p>
         </div>
 
         {mode === "register" ? (
@@ -365,8 +487,8 @@ export default function Face() {
           </form>
         ) : (
           <div className="space-y-4">
-            <button type="button" onClick={verifyFace} disabled={busy || modelState !== "ready" || !engine} className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 px-4 py-3 font-bold text-slate-950">
-              {busy ? "Verificando…" : "Verificar rostro e ingresar"}
+            <button type="button" onClick={verifyFace} disabled={busy || modelState !== "ready" || !cameraReady} className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 px-4 py-3 font-bold text-slate-950">
+              {busy ? "Verificando…" : "Verificar ahora"}
             </button>
             <form onSubmit={verifyCode} className="grid gap-3 sm:grid-cols-3">
               <input aria-label="Documento" placeholder="Documento" value={code.documentId} onChange={(event) => setCode({ ...code, documentId: event.target.value })} required />

@@ -160,6 +160,22 @@ function record(db, fields) {
   return event;
 }
 
+export function recordEntryAlert(db, event) {
+  if (event.access !== "permitido") return;
+  db.faceAlerts.push({
+    id: nid("al"),
+    at: event.at,
+    kind: "ingreso",
+    personId: event.personId,
+    name: event.name,
+    documentId: event.documentId,
+    reason: "",
+    attempts: 0,
+    reviewed: false,
+    reviewedAt: null,
+  });
+}
+
 export function summary(date = bogotaDate()) {
   const db = ensureFace();
   const events = db.accessEvents.filter((event) => bogotaDate(event.at) === date);
@@ -213,6 +229,7 @@ export function verifyFace({ descriptor, liveness, quality, staticImage }, actor
     attempts,
     by: actor,
   });
+  recordEntryAlert(db, event);
   writeDb(db);
   return {
     access,
@@ -245,7 +262,7 @@ export function verifyCode({ documentId, pin }, actor = "") {
     reason = person.status;
   }
   const attempts = access === "permitido" ? 0 : noteFailure(db, now, reason, valid ? person : null);
-  record(db, {
+  const event = record(db, {
     person: valid ? person : null,
     result: access === "permitido" ? "autorizado" : "denegado",
     access,
@@ -254,6 +271,7 @@ export function verifyCode({ documentId, pin }, actor = "") {
     attempts,
     by: actor,
   });
+  recordEntryAlert(db, event);
   writeDb(db);
   return {
     access,
@@ -424,8 +442,8 @@ export function attendance(date = bogotaDate()) {
     absent,
     denied: day.filter((event) => event.access === "denegado").map(publicEvent),
     pending: db.facePeople.filter((person) => person.status === "pendiente").map(publicPerson),
-    alerts: db.faceAlerts.filter((alert) => !alert.reviewed),
-    history: day.map(publicEvent),
+    alerts: db.faceAlerts.filter((alert) => !alert.reviewed).slice(-50).reverse(),
+    history: day.map(publicEvent).reverse(),
     counts: {
       entered: entered.length,
       absent: absent.length,

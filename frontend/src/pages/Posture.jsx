@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Activity, AlertTriangle, ArrowLeft, Camera, CameraOff, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { chooseTrackedPose } from "../postureTracking.js";
 
 const KEYPOINT_THRESHOLD = 0.3;
 const ALERT_ANGLE = 28;
@@ -23,7 +24,7 @@ function torsoAngle(pose) {
   return Math.round(Math.atan2(Math.abs(shoulders.x - hips.x), vertical) * 180 / Math.PI);
 }
 
-function drawPose(canvas, video, pose) {
+function drawPose(canvas, video, pose, postureWarning) {
   if (!canvas || !video.videoWidth || !video.videoHeight) return;
   if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
     canvas.width = video.videoWidth;
@@ -50,7 +51,7 @@ function drawPose(canvas, video, pose) {
   ];
 
   context.lineWidth = Math.max(2, canvas.width / 240);
-  context.strokeStyle = "#34d399";
+  context.strokeStyle = postureWarning ? "#fb7185" : "#34d399";
   context.fillStyle = "#facc15";
   for (const [startName, endName] of segments) {
     const start = keypoints.get(startName);
@@ -67,6 +68,27 @@ function drawPose(canvas, video, pose) {
     context.arc(point.x, point.y, Math.max(3, canvas.width / 120), 0, Math.PI * 2);
     context.fill();
   }
+
+  const visible = pose.keypoints.filter((point) => point.score >= KEYPOINT_THRESHOLD);
+  if (visible.length) {
+    const bounds = pose.box || {
+      xMin: Math.min(...visible.map((point) => point.x)),
+      yMin: Math.min(...visible.map((point) => point.y)),
+      xMax: Math.max(...visible.map((point) => point.x)),
+      yMax: Math.max(...visible.map((point) => point.y)),
+    };
+    const padding = Math.max(8, canvas.width * 0.015);
+    const x = Math.max(0, bounds.xMin - padding);
+    const y = Math.max(0, bounds.yMin - padding);
+    const width = Math.min(canvas.width - x, bounds.xMax - bounds.xMin + padding * 2);
+    const height = Math.min(canvas.height - y, bounds.yMax - bounds.yMin + padding * 2);
+    context.strokeStyle = postureWarning ? "#fb7185" : "#34d399";
+    context.lineWidth = Math.max(3, canvas.width / 180);
+    context.strokeRect(x, y, width, height);
+    context.font = `600 ${Math.max(14, canvas.width / 32)}px sans-serif`;
+    context.fillStyle = postureWarning ? "#fb7185" : "#34d399";
+    context.fillText("Persona seguida", x + 5, Math.max(18, y - 8));
+  }
 }
 
 export default function Posture() {
@@ -81,10 +103,17 @@ export default function Posture() {
   const lastFrameRef = useRef(0);
   const badSinceRef = useRef(0);
   const lastBeepRef = useRef(0);
+  const selectedTrackIdRef = useRef(null);
+  const lastCenterRef = useRef(null);
   const [cameraOn, setCameraOn] = useState(false);
   const [loading, setLoading] = useState(false);
   const [alertActive, setAlertActive] = useState(false);
   const [angle, setAngle] = useState(null);
+  const [poseCount, setPoseCount] = useState(0);
+  const [trackId, setTrackId] = useState(null);
+  const [trackVisible, setTrackVisible] = useState(false);
+  const [movementDetected, setMovementDetected] = useState(false);
+  const [cameraAspect, setCameraAspect] = useState("4 / 3");
   const [error, setError] = useState("");
 
   function playAlert() {
@@ -115,11 +144,19 @@ export default function Posture() {
     detectorRef.current?.dispose();
     detectorRef.current = null;
     badSinceRef.current = 0;
+    selectedTrackIdRef.current = null;
+    lastCenterRef.current = null;
     frameBusyRef.current = false;
+    overlayRef.current?.getContext("2d")?.clearRect(0, 0, overlayRef.current.width, overlayRef.current.height);
     if (updateState) {
       setCameraOn(false);
       setAlertActive(false);
       setAngle(null);
+      setPoseCount(0);
+      setTrackId(null);
+      setTrackVisible(false);
+      setMovementDetected(false);
+      setCameraAspect("4 / 3");
     }
   }
 
@@ -148,6 +185,7 @@ export default function Posture() {
       });
       if (!videoRef.current) throw new Error("No se pudo preparar la vista de cámara.");
       videoRef.current.srcObject = streamRef.current;
+      setCameraAspect(`${videoRef.current.videoWidth || 4} / ${videoRef.current.videoHeight || 3}`);
       await videoRef.current.play();
 
       const tf = await import("@tensorflow/tfjs");
@@ -156,10 +194,16 @@ export default function Posture() {
       await tf.ready();
       const poseDetection = await import("@tensorflow-models/pose-detection");
       detectorRef.current = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, {
-        modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
+        modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING,
+        enableTracking: true,
         enableSmoothing: true,
       });
 
+      selectedTrackIdRef.current = null;
+      lastCenterRef.current = null;
+      setTrackId(null);
+      setTrackVisible(false);
+      setPoseCount(0);
       setCameraOn(true);
       frameRef.current = requestAnimationFrame(detectFrame);
     } catch (cameraError) {
@@ -178,10 +222,26 @@ export default function Posture() {
       try {
         const video = videoRef.current;
         if (video?.readyState >= 2) {
-          const poses = await detectorRef.current.estimatePoses(video, { maxPoses: 1, flipHorizontal: false });
-          const pose = poses[0];
+          const poses = await detectorRef.current.estimatePoses(video, { maxPoses: 6, flipHorizontal: false });
+          setPoseCount((current) => current === poses.length ? current : poses.length);
+          const tracked = chooseTrackedPose(poses, selectedTrackIdRef.current);
+          selectedTrackIdRef.current = tracked.trackId;
+          setTrackId((current) => current === tracked.trackId ? current : tracked.trackId);
+          const pose = tracked.pose;
+          setTrackVisible(Boolean(pose));
           if (pose) {
-            drawPose(overlayRef.current, video, pose);
+            const shoulders = midpoint(pose, "left_shoulder", "right_shoulder");
+            const hips = midpoint(pose, "left_hip", "right_hip");
+            const center = shoulders && hips
+              ? { x: (shoulders.x + hips.x) / 2, y: (shoulders.y + hips.y) / 2 }
+              : null;
+            if (center && lastCenterRef.current) {
+              const distance = Math.hypot(center.x - lastCenterRef.current.x, center.y - lastCenterRef.current.y);
+              setMovementDetected(distance > Math.max(8, video.videoWidth * 0.015));
+            } else {
+              setMovementDetected(false);
+            }
+            lastCenterRef.current = center;
             const measuredAngle = torsoAngle(pose);
             setAngle(measuredAngle);
             const now = performance.now();
@@ -189,6 +249,7 @@ export default function Posture() {
               if (!badSinceRef.current) badSinceRef.current = now;
               const shouldAlert = now - badSinceRef.current >= ALERT_DELAY_MS;
               setAlertActive((active) => active === shouldAlert ? active : shouldAlert);
+              drawPose(overlayRef.current, video, pose, shouldAlert);
               if (shouldAlert && now - lastBeepRef.current >= 2200) {
                 playAlert();
                 lastBeepRef.current = now;
@@ -196,14 +257,20 @@ export default function Posture() {
             } else {
               badSinceRef.current = 0;
               setAlertActive(false);
+              drawPose(overlayRef.current, video, pose, false);
             }
           } else {
             const canvas = overlayRef.current;
             canvas?.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
+            lastCenterRef.current = null;
+            setTrackVisible(false);
+            setMovementDetected(false);
             setAngle(null);
             setAlertActive(false);
+            badSinceRef.current = 0;
           }
         }
+
       } catch (analysisError) {
         stopCamera();
         setError(`No se pudo analizar la imagen: ${analysisError.message}`);
@@ -213,6 +280,24 @@ export default function Posture() {
       }
     }
     frameRef.current = requestAnimationFrame(detectFrame);
+  }
+
+  function chooseAnotherPerson() {
+    selectedTrackIdRef.current = null;
+    lastCenterRef.current = null;
+    badSinceRef.current = 0;
+    setTrackId(null);
+    setTrackVisible(false);
+    setMovementDetected(false);
+    setAlertActive(false);
+    setAngle(null);
+  }
+
+  function updateCameraAspect() {
+    const video = videoRef.current;
+    if (video?.videoWidth && video?.videoHeight) {
+      setCameraAspect(`${video.videoWidth} / ${video.videoHeight}`);
+    }
   }
 
   return (
@@ -234,8 +319,8 @@ export default function Posture() {
 
       <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(280px,1fr)]">
         <section className="card">
-          <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-slate-950">
-            <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-contain" aria-label="Vista previa para análisis de postura" />
+          <div className="relative overflow-hidden rounded-xl bg-slate-950" style={{ aspectRatio: cameraAspect }}>
+            <video ref={videoRef} onLoadedMetadata={updateCameraAspect} autoPlay playsInline muted className="h-full w-full object-contain" aria-label="Vista previa para análisis de postura" />
             <canvas ref={overlayRef} className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true" />
             {!cameraOn && (
               <div className="absolute inset-0 grid place-items-center p-6 text-center text-slate-300">
@@ -252,11 +337,29 @@ export default function Posture() {
                 <Camera size={17} /> {loading ? "Preparando el modelo…" : "Encender cámara y analizar"}
               </button>
             ) : (
-              <button type="button" className="button inline-flex items-center gap-2" onClick={() => stopCamera()}>
-                <CameraOff size={17} /> Detener cámara
-              </button>
+              <>
+                <button type="button" className="button inline-flex items-center gap-2" onClick={chooseAnotherPerson}>
+                  <Camera size={17} /> Reiniciar seguimiento
+                </button>
+                <button type="button" className="button inline-flex items-center gap-2" onClick={() => stopCamera()}>
+                  <CameraOff size={17} /> Detener cámara
+                </button>
+              </>
             )}
           </div>
+          {cameraOn && (
+            <p className="mt-3 text-sm text-slate-600" role="status" aria-live="polite">
+              {poseCount === 0
+                ? "Buscando personas en el encuadre…"
+                : trackId === null
+                  ? `Se detectaron ${poseCount} ${poseCount === 1 ? "persona" : "personas"}; preparando seguimiento.`
+                  : !trackVisible
+                    ? `Se perdió de vista la pista ${trackId + 1}; no se cambiará a otra persona.`
+                  : poseCount > 1
+                    ? `Siguiendo a una persona entre ${poseCount} detectadas · pista ${trackId + 1}.`
+                    : `Persona en seguimiento · pista ${trackId + 1}.`}
+            </p>
+          )}
           {error && <p className="status error mt-4" role="alert">{error}</p>}
         </section>
 
@@ -270,10 +373,12 @@ export default function Posture() {
                 <p className="text-sm text-slate-600">
                   {alertActive
                     ? "El torso se mantiene inclinado. Haz una pausa y reajusta tu posición."
+                    : trackVisible
+                      ? `Persona seguida · movimiento ${movementDetected ? "detectado" : "estable"}${angle !== null ? ` · inclinación del torso: ${angle}°` : ""}`
                     : cameraOn && angle !== null
                       ? `Inclinación estimada del torso: ${angle}°`
                       : cameraOn
-                        ? "Encuadra hombros y cadera; coloca la cámara de lado."
+                        ? "Encuadra una persona de cuerpo completo; coloca la cámara de lado."
                         : "La detección se activa únicamente al encender la cámara."}
                 </p>
               </div>
@@ -283,13 +388,14 @@ export default function Posture() {
           <section className="card">
             <h2 className="text-lg">Cómo usarlo</h2>
             <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-slate-600">
-              <li>Coloca el dispositivo a un lado y encuadra hombros y cadera.</li>
-              <li>Permite el acceso a la cámara y mantente dentro del cuadro.</li>
-              <li>Si la inclinación estimada persiste, verás una alerta visual y sonora.</li>
+              <li>Enciende la cámara y encuadra a la persona de cuerpo completo.</li>
+              <li>El sistema selecciona la persona con detección más clara y mantiene su seguimiento aunque detecte a otras.</li>
+              <li>Si pierde de vista a la persona, no cambia a otra; pulsa “Reiniciar seguimiento” para seleccionarla de nuevo.</li>
+              <li>Tras 1,6 segundos de inclinación sostenida, aparece una alerta visual y suena un aviso.</li>
             </ol>
             <p className="mt-4 rounded-lg bg-emerald-50 p-3 text-xs leading-relaxed text-emerald-950">
               <CheckCircle2 className="mr-1 inline" size={15} />
-              El video se analiza en este dispositivo y no se envía al servidor. Es una ayuda educativa aproximada, no un diagnóstico ni sustituto de las pausas y recomendaciones de seguridad laboral.
+              El seguimiento es visual y anónimo: no reconoce nombres ni guarda imágenes; el video se analiza en este dispositivo y no se envía al servidor. Es una ayuda educativa aproximada, no un diagnóstico ni sustituto de las pausas y recomendaciones de seguridad laboral.
             </p>
           </section>
         </aside>
