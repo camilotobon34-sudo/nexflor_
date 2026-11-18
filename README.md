@@ -41,7 +41,7 @@ El desarrollo local conserva `backend/data/db.json`. En Vercel, configura una ba
 
 ### Despliegue del proyecto completo en Vercel
 
-Importa el repositorio y deja **Root Directory** en la raíz del repositorio (no en `frontend/`), para que Vercel incluya la función `api/[...path].js` junto con la aplicación. La configuración raíz `vercel.json` instala las dependencias de `frontend/` y `backend/`, construye Vite y publica `frontend/dist`; también redirige las rutas de React Router a `index.html`. No agregues otro servicio a `vercel.json`.
+Importa el repositorio y deja **Root Directory** en la raíz del repositorio (no en `frontend/`), para que Vercel incluya la función `api/[...path].js` junto con la aplicación. La configuración raíz `vercel.json` selecciona Vite, instala las dependencias de `frontend/` y `backend/`, construye Vite y publica `frontend/dist`; la reescritura SPA excluye `/api/` para que las solicitudes de backend lleguen a la función y no reciban `index.html` con un falso 200. No agregues otro servicio a `vercel.json`.
 
 Configura en el proyecto de Vercel las variables de backend descritas abajo. Como la función y el frontend comparten dominio, `VITE_API_URL` puede quedar sin configurar. Si alojas el backend en otro dominio, establece `VITE_API_URL` al origen HTTPS del backend (sin `/api` al final) y habilita ese origen en CORS.
 
@@ -49,9 +49,12 @@ Para comprobar el mismo build localmente, ejecuta `npm ci --prefix frontend` y `
 
 Guarda en el entorno de producción del backend estos secretos, nunca en el repositorio:
 
-- `MYSQL_URL`: URL MySQL pública de Railway, por ejemplo `mysql://usuario:contraseña@host:puerto/base`.
+- `MYSQL_URL`: URL MySQL pública del proveedor, por ejemplo `mysql://usuario:contraseña@host:puerto/base`. Codifica caracteres reservados de usuario/contraseña como `%40` para `@`.
+- `MYSQL_SSL_CA` (opcional): certificado CA PEM entregado por el proveedor de MySQL, si su certificado no encadena con las CA de confianza de Node.js. El backend siempre valida el certificado del servidor cuando TLS está activo; no configures una CA obtenida de una fuente no confiable ni desactives la verificación para producción.
+- `MYSQL_SSL_ALLOW_SELF_SIGNED` (temporal y no recomendado): configúralo en `true` solo si aceptas que MySQL use TLS sin validar la identidad del servidor. El tráfico sigue cifrado, pero una conexión interceptada podría hacerse pasar por la base. Retíralo al configurar `MYSQL_SSL_CA` oficial.
 - `SESSION_SECRET`: cadena aleatoria de al menos 32 bytes. Puedes generarla con `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
 - `INITIAL_ADMIN_PASSWORD`: contraseña nueva y fuerte de al menos 16 caracteres. Se aplica a las cuentas de administrador una sola vez cuando se crea por primera vez la base Nexflor.
+- `ADMIN_PASSWORD_RESET_ID`: solo para restablecer la cuenta existente de Camilo. Define un identificador nuevo (8–100 caracteres) junto con `INITIAL_ADMIN_PASSWORD`; la primera solicitud válida guarda el nuevo hash una sola vez. Después elimina esta variable de Vercel. El identificador aplicado queda registrado en MySQL para impedir que el mismo restablecimiento se repita.
 - `FACE_DATA_KEY`: llave aleatoria hexadecimal de 32 bytes, generada con `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`. Guárdala de forma permanente: sin ella no se pueden leer plantillas faciales cifradas.
 
 El primer acceso con MySQL crea la tabla `nexflor_state` e inicializa su contenido con los datos incluidos en `backend/data/db.json`. Los cambios de cursos, progreso, equipo, cuentas y asistencia se guardan en MySQL; las imágenes administrativas también se conservan allí. No borres la base MySQL: contiene los datos activos de la plataforma.

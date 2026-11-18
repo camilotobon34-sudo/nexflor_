@@ -48,6 +48,35 @@ export function usesMysqlStorage() {
   return Boolean(process.env.VERCEL || process.env.MYSQL_URL);
 }
 
+export function parseMysqlUrl(value) {
+  try {
+    const url = new URL(String(value || ""));
+    if (!["mysql:", "mysql2:"].includes(url.protocol) || !url.hostname || !url.username || !url.password || url.pathname.length < 2) {
+      throw new Error("Invalid MySQL URL.");
+    }
+    return {
+      host: url.hostname,
+      port: Number(url.port) || 3306,
+      user: decodeURIComponent(url.username),
+      password: decodeURIComponent(url.password),
+      database: decodeURIComponent(url.pathname.slice(1)),
+    };
+  } catch {
+    const error = new Error("MYSQL_URL debe ser una URL válida: mysql://usuario:contraseña@host:puerto/base.");
+    error.status = 503;
+    throw error;
+  }
+}
+
+export function mysqlTlsOptions(env = process.env) {
+  if (env.MYSQL_SSL === "false") return undefined;
+  const ca = String(env.MYSQL_SSL_CA || "").trim();
+  return {
+    rejectUnauthorized: env.MYSQL_SSL_ALLOW_SELF_SIGNED !== "true",
+    ...(ca ? { ca } : {}),
+  };
+}
+
 async function getMysqlPool() {
   if (!process.env.MYSQL_URL) {
     const error = new Error("La base persistente MySQL no está configurada. Define MYSQL_URL en el entorno de despliegue.");
@@ -57,23 +86,15 @@ async function getMysqlPool() {
   if (!mysqlPoolPromise) {
     mysqlPoolPromise = import("mysql2/promise")
       .then(({ createPool }) => {
-        const url = new URL(process.env.MYSQL_URL);
-        if (!["mysql:", "mysql2:"].includes(url.protocol)) {
-          throw new Error("MYSQL_URL debe utilizar el protocolo mysql://.");
-        }
         return createPool({
-          host: url.hostname,
-          port: Number(url.port) || 3306,
-          user: decodeURIComponent(url.username),
-          password: decodeURIComponent(url.password),
-          database: decodeURIComponent(url.pathname.slice(1)),
+          ...parseMysqlUrl(process.env.MYSQL_URL),
           waitForConnections: true,
           connectionLimit: Math.max(1, Number(process.env.MYSQL_CONNECTION_LIMIT) || 3),
           maxIdle: 2,
           idleTimeout: 60000,
           enableKeepAlive: true,
           connectTimeout: 10000,
-          ssl: process.env.MYSQL_SSL === "false" ? undefined : { rejectUnauthorized: true },
+          ssl: mysqlTlsOptions(),
         });
       })
       .catch((error) => {
@@ -155,7 +176,7 @@ export async function withDatabaseRequest(_req, res, next) {
       data: typeof payload === "string" ? JSON.parse(payload) : payload,
       dirty: seed.affectedRows > 0,
     };
-    const [{ ensureAdmin, resetInitialAdminPasswords }, { ensureStaff }, face] = await Promise.all([
+    const [{ ensureAdmin, resetInitialAdminPasswords, resetAdminPasswordOnce }, { ensureStaff }, face] = await Promise.all([
       import("./auth.js"),
       import("./staff.js"),
       import("./faceStore.js"),
@@ -165,6 +186,8 @@ export async function withDatabaseRequest(_req, res, next) {
     installResponseCommit(res, connection, context);
     mysqlRequest.run(context, () => {
       ensureAdmin();
+      const adminPasswordResetId = String(process.env.ADMIN_PASSWORD_RESET_ID || "").trim();
+      if (adminPasswordResetId) resetAdminPasswordOnce("camilo", adminPasswordResetId);
       ensureStaff();
       face.ensureFace(context.data);
       next();

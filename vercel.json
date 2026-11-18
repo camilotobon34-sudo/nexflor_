@@ -1,10 +1,15 @@
 {
+  "framework": "vite",
   "installCommand": "npm ci --prefix frontend && npm ci --prefix backend",
   "buildCommand": "npm run build --prefix frontend",
   "outputDirectory": "frontend/dist",
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/api/:path((?!bridge$).*)",
+      "destination": "/api/bridge?__nexflor_route=:path*"
+    },
+    {
+      "source": "/:path((?!api/).*)",
       "destination": "/index.html"
     }
   ]

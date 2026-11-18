@@ -98,6 +98,32 @@ export function resetInitialAdminPasswords() {
   writeDb(db);
 }
 
+export function applyAdminPasswordReset(db, adminId, resetId, password) {
+  const operationId = String(resetId || "").trim();
+  const nextPassword = String(password || "");
+  if (!/^[\w.-]{8,100}$/.test(operationId)) {
+    fail("ADMIN_PASSWORD_RESET_ID debe ser un identificador de 8 a 100 caracteres.", 503);
+  }
+  if (nextPassword.length < 16) {
+    fail("INITIAL_ADMIN_PASSWORD debe tener al menos 16 caracteres para restablecer el acceso.", 503);
+  }
+  if (db.adminPasswordResetId === operationId) return false;
+
+  const admin = (Array.isArray(db.admins) ? db.admins : []).find((item) => item.id === adminId);
+  if (!admin) fail("No se encontró la cuenta administradora que se debe restablecer.", 503);
+
+  admin.passwordHash = hashPassword(nextPassword);
+  db.adminPasswordResetId = operationId;
+  return true;
+}
+
+export function resetAdminPasswordOnce(adminId, resetId) {
+  const db = readDb();
+  const changed = applyAdminPasswordReset(db, adminId, resetId, INITIAL_ADMIN_PASSWORD);
+  if (changed) writeDb(db);
+  return changed;
+}
+
 function sign(role, id) {
   if (!SECRET) {
     const error = new Error("Configura SESSION_SECRET antes de habilitar sesiones en producción.");
