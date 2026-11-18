@@ -1,15 +1,15 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@layer base {
-  body {
-    font-family: 'Outfit', sans-serif;
-    background-color: #f8fafc;
-    color: #0f172a;
-    margin: 0;
-    padding: 0;
-  }
+body {
+  font-family: 'Outfit', sans-serif;
+  background-color: #f8fafc;
+  color: #0f172a;
+  margin: 0;
+  padding: 0;
+}
 
-  h1, h2, h3, h4, .font-fraunces {
-    font-family: 'Fraunces', serif;
-  }
+h1, h2, h3, h4, .font-fraunces {
+  font-family: 'Fraunces', serif;
 }
