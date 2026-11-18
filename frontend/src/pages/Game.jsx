@@ -1,13 +1,20 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Scissors, CheckCircle2, RotateCcw, ArrowLeft, Award } from 'lucide-react';
+import { useApi } from "../api.js";
 
 export default function Game() {
   const { id } = useParams();
+  const course = useApi(`/courses/${id}`);
   const [tallosCortados, setTallosCortados] = useState(0);
   const [juegoTerminado, setJuegoTerminado] = useState(false);
 
   const metaTallos = 10;
+
+  useEffect(() => {
+    setTallosCortados(0);
+    setJuegoTerminado(false);
+  }, [id]);
 
   const cortarTallo = () => {
     if (tallosCortados < metaTallos) {
@@ -23,6 +30,18 @@ export default function Game() {
     setTallosCortados(0);
     setJuegoTerminado(false);
   };
+
+  if (course.loading) return <p className="status">Cargando la actividad…</p>;
+  if (course.error) return <p className="status error" role="alert">{course.error}</p>;
+  if (course.data?.progress.percent !== 100) {
+    return (
+      <section className="page">
+        <h1>Actividad bloqueada</h1>
+        <p className="lede">Completa todas las lecciones del curso antes de iniciar el juego.</p>
+        <Link className="button" to={`/cursos/${id}`}>Volver al curso</Link>
+      </section>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto p-6 text-white">

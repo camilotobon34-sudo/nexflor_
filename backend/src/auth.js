@@ -180,7 +180,7 @@ function freshWorker(db, clean, password, shift) {
     progress: 0,
     completedLessons: [],
     attempts: [],
-    continueCourseId: "preparacion-segura",
+    continueCourseId: "safe-preparation",
   };
   db.workers.push(worker);
   db.team.push({
@@ -198,10 +198,11 @@ export function registerWorker(name, password, shift) {
   const clean = cleanWorkerName(name, password);
   ensureAdmin();
   const db = readDb();
+  if (!Array.isArray(db.workers)) db.workers = [];
+  if (!Array.isArray(db.team)) db.team = [];
   if ((db.admins || []).some((item) => samePerson(item, clean))) {
     fail("Ese nombre es de un administrador. Entra por esa opción.", 400);
   }
-  if (!Array.isArray(db.workers)) db.workers = [];
   if (db.workers.some((item) => norm(item.name) === norm(clean))) {
     fail("Esa cuenta ya existe. Entra con tu nombre y contraseña.", 400);
   }

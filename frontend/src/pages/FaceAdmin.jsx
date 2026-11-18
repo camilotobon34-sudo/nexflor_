@@ -1,127 +1,182 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { ShieldCheck, AlertTriangle, Users, Clock, ArrowLeft, Trash2, CheckCircle2 } from 'lucide-react';
+import { useCallback, useEffect, useState } from "react";
+import { api } from "../api.js";
 
-export default function Admin() {
-  const [registros, setRegistros] = useState([]);
+function adminApi(path, token, options = {}) {
+  return api(path, {
+    ...options,
+    headers: { ...(options.headers || {}), Authorization: `Bearer ${token}` },
+  });
+}
 
-  useEffect(() => {
-    const guardados = JSON.parse(localStorage.getItem('nexflor_asistencia') || '[]');
-    setRegistros(guardados);
-  }, []);
+function dateTime(value) {
+  return value ? new Date(value).toLocaleString("es-CO") : "—";
+}
 
-  const limpiarRegistros = () => {
-    if (window.confirm("¿Estás seguro de borrar todo el historial de asistencia de Flores El Trigal?")) {
-      localStorage.removeItem('nexflor_asistencia');
-      setRegistros([]);
+export default function FaceAdmin({ token }) {
+  const [people, setPeople] = useState([]);
+  const [attendance, setAttendance] = useState(null);
+  const [staff, setStaff] = useState([]);
+  const [form, setForm] = useState({ name: "", username: "", password: "" });
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [newCode, setNewCode] = useState("");
+
+  const reload = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const [nextPeople, nextAttendance, nextStaff] = await Promise.all([
+        adminApi("/admin/face/people", token),
+        adminApi("/admin/face/attendance", token),
+        adminApi("/admin/staff", token),
+      ]);
+      setPeople(nextPeople);
+      setAttendance(nextAttendance);
+      setStaff(nextStaff);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [token]);
 
-  const totalAsistentes = registros.length;
-  const totalTardes = registros.filter(r => r.tarde).length;
-  const totalPuntuales = totalAsistentes - totalTardes;
+  useEffect(() => { reload(); }, [reload]);
+
+  async function submitStaff(event) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await adminApi("/admin/staff", token, { method: "POST", body: JSON.stringify(form) });
+      setForm({ name: "", username: "", password: "" });
+      setNotice("Cuenta de escaneo creada.");
+      await reload();
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function action(path, options = {}, success = "Cambios guardados.") {
+    setBusy(true);
+    setError("");
+    setNotice("");
+    setNewCode("");
+    try {
+      const result = await adminApi(path, token, options);
+      if (result.pin) setNewCode(`Código alternativo para ${result.person.fullName}: ${result.pin}`);
+      else setNotice(success);
+      await reload();
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 text-white">
-      <Link to="/" className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 text-xs font-semibold mb-6">
-        <ArrowLeft size={16} /> Volver al Inicio
-      </Link>
+    <div className="space-y-6">
+      {error && <p className="status error" role="alert">{error}</p>}
+      {notice && <p className="status" role="status">{notice}</p>}
+      {newCode && <p className="rounded-lg bg-amber-100 p-3 text-sm text-amber-950" role="status">{newCode}. Cópialo ahora; no se volverá a mostrar.</p>}
 
-      <div className="bg-slate-800 border border-slate-700 rounded-2xl p-8 shadow-2xl space-y-6">
-        
-        {/* Cabecera del Panel */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center pb-6 border-b border-slate-700 gap-4">
+      <section className="card">
+        <div className="flex items-center justify-between gap-3">
           <div>
-            <span className="bg-emerald-600/30 text-emerald-300 text-xs font-semibold px-3 py-1 rounded-full border border-emerald-500/30">
-              Flores El Trigal - Administración
-            </span>
-            <h1 className="text-2xl font-bold mt-2 flex items-center gap-2">
-              <Users className="text-emerald-400" /> Panel de Control y Alertas
-            </h1>
+            <h2>Asistencia de hoy</h2>
+            <p className="lede">{attendance?.date || "Cargando fecha…"}</p>
           </div>
-          {registros.length > 0 && (
-            <button 
-              onClick={limpiarRegistros}
-              className="bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/40 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition"
-            >
-              <Trash2 size={14} /> Limpiar Historial
-            </button>
-          )}
+          <button type="button" onClick={reload} disabled={loading} className="button">Actualizar</button>
         </div>
-
-        {/* Tarjetas de Resumen (Métricas) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-slate-900/60 border border-slate-700 p-5 rounded-xl flex items-center gap-4">
-            <div className="bg-blue-500/20 text-blue-400 p-3 rounded-xl">
-              <Users size={24} />
+        <div className="grid gap-3 mt-4 sm:grid-cols-4">
+          {[["Ingresos", attendance?.counts.entered], ["Ausentes", attendance?.counts.absent], ["Rechazados", attendance?.counts.denied], ["Pendientes", attendance?.counts.pending]].map(([label, count]) => (
+            <div key={label} className="rounded-lg bg-slate-100 p-4">
+              <p className="text-xs text-slate-600">{label}</p>
+              <strong className="text-2xl">{count ?? "—"}</strong>
             </div>
-            <div>
-              <p className="text-xs text-slate-400 uppercase tracking-wider">Total Registrados</p>
-              <h3 className="text-2xl font-black text-white">{totalAsistentes}</h3>
-            </div>
-          </div>
-
-          <div className="bg-slate-900/60 border border-slate-700 p-5 rounded-xl flex items-center gap-4">
-            <div className="bg-emerald-500/20 text-emerald-400 p-3 rounded-xl">
-              <CheckCircle2 size={24} />
-            </div>
-            <div>
-              <p className="text-xs text-slate-400 uppercase tracking-wider">Ingresos Puntuales</p>
-              <h3 className="text-2xl font-black text-emerald-400">{totalPuntuales}</h3>
-            </div>
-          </div>
-
-          <div className="bg-slate-900/60 border border-slate-700 p-5 rounded-xl flex items-center gap-4">
-            <div className="bg-red-500/20 text-red-400 p-3 rounded-xl">
-              <AlertTriangle size={24} />
-            </div>
-            <div>
-              <p className="text-xs text-slate-400 uppercase tracking-wider">Alertas de Retraso</p>
-              <h3 className="text-2xl font-black text-red-400">{totalTardes}</h3>
-            </div>
-          </div>
+          ))}
         </div>
+        <h3 className="mt-6 font-semibold">Movimientos recientes</h3>
+        {attendance?.history.length ? (
+          <ul className="mt-2 divide-y">
+            {attendance.history.slice(0, 20).map((event) => (
+              <li key={event.id} className="flex flex-wrap justify-between gap-2 py-3 text-sm">
+                <span><strong>{event.name}</strong> · {event.documentId || "Sin identificación"} · {event.method}</span>
+                <span className={event.access === "permitido" ? "text-emerald-700" : "text-red-700"}>
+                  {event.access === "permitido" ? "Permitido" : `Denegado · ${event.reason}`} · {dateTime(event.at)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : <p className="status">No hay movimientos hoy.</p>}
+      </section>
 
-        {/* Lista de Registros */}
-        <div className="space-y-4 pt-2">
-          <h3 className="text-sm font-bold text-slate-300 flex items-center gap-2">
-            <Clock size={16} className="text-emerald-400" /> Historial de Entradas (Turno Base: 6:00 a.m.)
-          </h3>
-
-          <div className="space-y-3">
-            {registros.length === 0 ? (
-              <div className="text-center py-12 bg-slate-900/40 rounded-xl border border-slate-700/60">
-                <p className="text-slate-500 text-xs">No hay registros de asistencia en este momento.</p>
-              </div>
-            ) : (
-              registros.map((reg, idx) => (
-                <div key={idx} className="bg-slate-900/60 p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between border border-slate-700 gap-4 text-xs">
-                  <div className="flex items-center gap-3">
-                    <img src={reg.foto} alt="Colaborador" className="w-12 h-12 rounded-full object-cover border-2 border-emerald-500" />
-                    <div>
-                      <h4 className="font-bold text-sm text-white">{reg.nombre}</h4>
-                      <p className="text-slate-400">{reg.cargo} • Cédula: {reg.cedula}</p>
-                      <p className="text-slate-300 mt-0.5">Hora de Check-in: <strong>{reg.hora}</strong></p>
-                    </div>
-                  </div>
-                  <div>
-                    {reg.tarde ? (
-                      <span className="bg-red-500/20 text-red-400 border border-red-500/40 px-3 py-1.5 rounded-full font-semibold flex items-center gap-1">
-                        <AlertTriangle size={14} /> Tarde (Alerta de Retraso)
-                      </span>
-                    ) : (
-                      <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-3 py-1.5 rounded-full font-semibold flex items-center gap-1">
-                        <ShieldCheck size={14} /> Puntual
-                      </span>
-                    )}
-                  </div>
+      <section className="card">
+        <h2>Registros de Nexflor ID</h2>
+        <p className="lede">Los nuevos registros se guardan en el servidor y aparecen aquí como pendientes de aprobación.</p>
+        {loading && <p className="status">Cargando registros…</p>}
+        {!loading && people.length === 0 && <p className="status">Todavía no hay personas registradas.</p>}
+        <ul className="mt-3 divide-y">
+          {people.map((person) => (
+            <li key={person.id} className="py-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <strong>{person.fullName}</strong>
+                  <p className="text-sm text-slate-600">{person.documentId} · {person.role || "Sin cargo"}</p>
+                  <p className="text-xs text-slate-500">Estado: {person.status} · Registro: {dateTime(person.createdAt)}</p>
+                  <p className="text-xs text-slate-500">Plantilla facial: {person.hasFace ? "sí" : "no"} · Código alternativo: {person.hasPin ? "sí" : "no"}</p>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
+                <div className="flex flex-wrap gap-2">
+                  {person.status === "pendiente" && <>
+                    <button type="button" disabled={busy} className="button" onClick={() => action(`/admin/face/people/${person.id}/approve`, { method: "POST" }, "Persona aprobada.")}>Aprobar</button>
+                    <button type="button" disabled={busy} className="danger" onClick={() => action(`/admin/face/people/${person.id}/reject`, { method: "POST" }, "Registro rechazado.")}>Rechazar</button>
+                  </>}
+                  {person.status === "autorizado" && <button type="button" disabled={busy} className="danger" onClick={() => action(`/admin/face/people/${person.id}/suspend`, { method: "POST" }, "Acceso suspendido.")}>Suspender</button>}
+                  {["rechazado", "suspendido"].includes(person.status) && <button type="button" disabled={busy} className="button" onClick={() => action(`/admin/face/people/${person.id}/reactivate`, { method: "POST" }, "Acceso reactivado.")}>Reactivar</button>}
+                  {!person.hasPin && <button type="button" disabled={busy} onClick={() => action(`/admin/face/people/${person.id}/code`, { method: "POST" })}>Crear código alternativo</button>}
+                  <button type="button" disabled={busy} className="danger" onClick={() => {
+                    if (window.confirm(`¿Eliminar el registro de ${person.fullName}?`)) {
+                      action(`/admin/face/people/${person.id}`, { method: "DELETE" }, "Registro eliminado.");
+                    }
+                  }}>Eliminar</button>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
 
-      </div>
+      <section className="admin-grid">
+        <div className="card">
+          <h2>Cuentas de escaneo</h2>
+          <p className="lede">Estas cuentas pueden registrar personas y verificar ingresos, no administrar reportes.</p>
+          {staff.length === 0 && <p className="status">No hay cuentas de escaneo.</p>}
+          <ul className="admin-list">
+            {staff.map((person) => (
+              <li key={person.id}>
+                <span>{person.name}<small>{person.username} · {person.active ? "Activa" : "Suspendida"}</small></span>
+                <button type="button" disabled={busy} onClick={() => action(`/admin/staff/${person.id}/active`, {
+                  method: "POST",
+                  body: JSON.stringify({ active: !person.active }),
+                }, person.active ? "Cuenta suspendida." : "Cuenta activada.")}>
+                  {person.active ? "Suspender" : "Activar"}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <form className="card stack" onSubmit={submitStaff}>
+          <h2>Nueva cuenta de escaneo</h2>
+          <label>Nombre<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} minLength={3} required /></label>
+          <label>Usuario<input value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} minLength={3} required /></label>
+          <label>Contraseña (mínimo 12 caracteres)<input type="password" autoComplete="new-password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} minLength={12} required /></label>
+          <button className="button" type="submit" disabled={busy}>{busy ? "Guardando…" : "Crear cuenta"}</button>
+        </form>
+      </section>
     </div>
   );
 }

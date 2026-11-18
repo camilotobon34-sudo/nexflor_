@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Activity, AlertOctagon, CheckCircle, Volume2, ArrowLeft } from 'lucide-react';
 
@@ -7,14 +7,24 @@ export default function Posture() {
   const audioCtxRef = useRef(null);
   const oscRef = useRef(null);
 
-  const iniciarPitido = () => {
+  useEffect(() => () => {
+    if (oscRef.current) {
+      oscRef.current.stop();
+      oscRef.current.disconnect();
+    }
+    if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+      audioCtxRef.current.close().catch((error) => console.error("Error al cerrar el audio de alerta:", error));
+    }
+  }, []);
+
+  const iniciarPitido = async () => {
     try {
       if (!audioCtxRef.current) {
         audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
       }
       const ctx = audioCtxRef.current;
       if (ctx.state === 'suspended') {
-        ctx.resume();
+        await ctx.resume();
       }
 
       // Crear oscilador para el tono de alerta fuerte en campo
@@ -77,21 +87,21 @@ export default function Posture() {
             {alertaActiva ? (
               <div className="space-y-3">
                 <AlertOctagon className="mx-auto text-red-400 animate-bounce" size={48} />
-                <h2 className="text-lg font-bold text-red-300">¡ALERTA CRÍTICA DE POSTURA!</h2>
-                <p className="text-xs text-red-200">Riesgo ergonómico lumbar detectado en campo. ¡Endereza tu espalda de inmediato!</p>
+                    <h2 className="text-lg font-bold text-red-300">Simulación de mala postura</h2>
+                    <p className="text-xs text-red-200">Demostración didáctica: esta pantalla no detectó una postura real.</p>
               </div>
             ) : (
               <div className="space-y-3">
                 <CheckCircle className="mx-auto text-emerald-400" size={48} />
-                <h2 className="text-lg font-bold text-emerald-300">Postura Ergonómica Correcta</h2>
-                <p className="text-xs text-slate-400">Monitoreo activo. Mantén la columna recta y usa apoyo adecuado.</p>
+                <h2 className="text-lg font-bold text-emerald-300">Listo para la práctica</h2>
+                <p className="text-xs text-slate-400">Simulación educativa. Esta pantalla no analiza la postura ni activa la cámara.</p>
               </div>
             )}
           </div>
 
           {/* Controles de Simulación Didáctica */}
           <div className="space-y-3 pt-2">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Simulación Didáctica en Tiempo Real:</p>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Simulación didáctica:</p>
             
             {!alertaActiva ? (
               <button 

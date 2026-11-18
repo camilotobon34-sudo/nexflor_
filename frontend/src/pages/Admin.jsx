@@ -319,17 +319,37 @@ function PersonRow({ token, person, reload }) {
 
   return (
     <li className="lesson-row">
-      <span>{person.name} <small>{person.role} · {person.shift}</small></span>
+      <div>
+        <strong>{person.name}</strong>
+        <small>{person.role} · {person.shift} · ID: {person.accountId || person.id}</small>
+        {person.courses?.length > 0 && (
+          <details className="mt-2">
+            <summary className="cursor-pointer">Auditar avance por curso</summary>
+            <ul className="mt-2 space-y-2">
+              {person.courses.map((course) => (
+                <li key={course.id} className="text-sm">
+                  <strong>{course.title}</strong>
+                  <small>{course.done}/{course.total} lecciones · {course.percent}% · Última práctica: {course.lastAttempt ? `${course.lastAttempt.percent}% (${course.lastAttempt.score}/${course.lastAttempt.total})` : "sin intento"}</small>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+      </div>
       <span className="row">
-        <input type="number" min="0" max="100" value={progress} onChange={(event) => setProgress(Number(event.target.value))} />
-        <button type="button" onClick={async () => {
-          await adminApi(`/admin/team/${person.id}`, token, { method: "PUT", body: JSON.stringify({ ...person, progress }) });
-          reload();
-        }}>Guardar</button>
-        <button type="button" className="danger" disabled={person.id === "laura"} onClick={async () => {
-          await adminApi(`/admin/team/${person.id}`, token, { method: "DELETE" });
-          reload();
-        }}>Quitar</button>
+        {!person.accountId && (
+          <>
+            <input type="number" min="0" max="100" value={progress} onChange={(event) => setProgress(Number(event.target.value))} />
+            <button type="button" onClick={async () => {
+              await adminApi(`/admin/team/${person.id}`, token, { method: "PUT", body: JSON.stringify({ ...person, progress }) });
+              reload();
+            }}>Guardar</button>
+            <button type="button" className="danger" disabled={person.id === "laura"} onClick={async () => {
+              await adminApi(`/admin/team/${person.id}`, token, { method: "DELETE" });
+              reload();
+            }}>Quitar</button>
+          </>
+        )}
       </span>
     </li>
   );

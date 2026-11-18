@@ -39,6 +39,31 @@ function courseOrFail(db, id) {
 
 export function overview() {
   const db = readDb();
+  const team = (db.team || []).map((person) => {
+    const worker = (db.workers || []).find((item) => item.id === person.id);
+    if (!worker) return { ...person, accountId: null, courses: [] };
+
+    const completed = new Set(worker.completedLessons || []);
+    return {
+      ...person,
+      accountId: worker.id,
+      courses: db.courses.map((course) => {
+        const done = course.lessons.filter((lesson) => completed.has(`${course.id}:${lesson.id}`)).length;
+        const attempt = [...(worker.attempts || [])].reverse().find((item) => item.courseId === course.id);
+        return {
+          id: course.id,
+          title: course.title,
+          done,
+          total: course.lessons.length,
+          percent: course.lessons.length ? Math.round((done / course.lessons.length) * 100) : 0,
+          lastAttempt: attempt
+            ? { score: attempt.score, total: attempt.total, percent: attempt.percent, at: attempt.at }
+            : null,
+        };
+      }),
+    };
+  });
+
   return {
     courses: db.courses.map((course) => ({
       id: course.id,
@@ -55,7 +80,7 @@ export function overview() {
         kind: lesson.kind,
       })),
     })),
-    team: db.team,
+    team,
     files: listFiles(),
   };
 }

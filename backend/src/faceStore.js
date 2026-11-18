@@ -3,7 +3,7 @@ import { readDb, writeDb } from "./store.js";
 import { hashPassword, checkPassword } from "./auth.js";
 import { decryptTemplate, encryptTemplate } from "./faceCrypto.js";
 
-export const CONSENT_TEXT = "Autorizo a Serranía a capturar una plantilla de mi rostro, solo para comprobar mi ingreso al taller. Entiendo que no se guarda una foto pública, que un administrador debe aprobarme antes del primer ingreso, y que puedo pedir la actualización o eliminación de estos datos. Ley 1581 de 2012 de Colombia.";
+export const CONSENT_TEXT = "Autorizo a Flores El Trigal a capturar una plantilla de mi rostro, solo para comprobar mi ingreso al taller. Entiendo que no se conserva la fotografía capturada, que un administrador debe aprobarme antes del primer ingreso, y que puedo pedir la actualización o eliminación de estos datos. Ley 1581 de 2012 de Colombia.";
 const RETENTION_MS = 180 * 24 * 60 * 60 * 1000;
 const AUDIT_MS = 365 * 24 * 60 * 60 * 1000;
 const FAIL_WINDOW = 15 * 60 * 1000;

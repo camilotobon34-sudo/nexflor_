@@ -1,212 +1,372 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Camera, ShieldCheck, AlertTriangle, Users, Clock, ArrowLeft } from 'lucide-react';
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { api } from "../api.js";
+import { clearSession, readSession, saveSession } from "../session.js";
+
+let modelLoad;
+let faceApiLoad;
+
+function loadFaceApi() {
+  if (!faceApiLoad) {
+    faceApiLoad = import("@vladmandic/face-api").catch((error) => {
+      faceApiLoad = null;
+      throw error;
+    });
+  }
+  return faceApiLoad;
+}
+
+async function loadFaceModels() {
+  const faceapi = await loadFaceApi();
+  if (!modelLoad) {
+    modelLoad = Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri("/models"),
+      faceapi.nets.faceLandmark68Net.loadFromUri("/models"),
+      faceapi.nets.faceRecognitionNet.loadFromUri("/models"),
+    ]).catch((error) => {
+      modelLoad = null;
+      throw error;
+    });
+  }
+  return modelLoad;
+}
+
+function eyeAspect(points, start) {
+  const point = (offset) => points[start + offset];
+  const span = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  const horizontal = span(point(0), point(3));
+  if (!horizontal) return 0;
+  return (span(point(1), point(5)) + span(point(2), point(4))) / (2 * horizontal);
+}
+
+async function analyzeFrames(frames) {
+  const faceapi = await loadFaceApi();
+  const samples = [];
+  const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 });
+
+  for (const frame of frames) {
+    const image = new Image();
+    image.src = frame;
+    await image.decode();
+    const faces = await faceapi.detectAllFaces(image, options).withFaceLandmarks().withFaceDescriptors();
+    if (faces.length !== 1) continue;
+    const face = faces[0];
+    const points = face.landmarks.positions;
+    samples.push({
+      descriptor: Array.from(face.descriptor),
+      ear: (eyeAspect(points, 36) + eyeAspect(points, 42)) / 2,
+      noseX: points[30].x,
+      boxWidth: face.detection.box.width,
+    });
+  }
+
+  if (samples.length < 3) {
+    throw new Error("No se pudo leer un rostro con claridad en al menos tres capturas. Ajusta la luz y vuelve a intentar.");
+  }
+
+  const descriptor = new Array(128).fill(0);
+  for (const sample of samples) {
+    sample.descriptor.forEach((value, index) => { descriptor[index] += value; });
+  }
+  let magnitude = 0;
+  descriptor.forEach((value, index) => {
+    descriptor[index] = value / samples.length;
+    magnitude += descriptor[index] ** 2;
+  });
+  magnitude = Math.sqrt(magnitude) || 1;
+  const normalized = descriptor.map((value) => Number((value / magnitude).toFixed(6)));
+  const noses = samples.map((sample) => sample.noseX);
+  const eyes = samples.map((sample) => sample.ear);
+  const moved = Math.max(...noses) - Math.min(...noses) > samples[0].boxWidth * 0.035;
+  const blinked = Math.max(...eyes) - Math.min(...eyes) >= 0.045;
+
+  return {
+    descriptor: normalized,
+    quality: true,
+    liveness: !frames.every((frame) => frame === frames[0]) && (moved || blinked),
+    staticImage: frames.every((frame) => frame === frames[0]),
+  };
+}
+
+function faceApi(path, token, options = {}) {
+  return api(path, {
+    ...options,
+    headers: { ...(options.headers || {}), Authorization: `Bearer ${token}` },
+  });
+}
+
+function stopStream(stream) {
+  stream?.getTracks().forEach((track) => track.stop());
+}
 
 export default function Face() {
   const videoRef = useRef(null);
-  const [foto, setFoto] = useState(null);
-  const [nombre, setNombre] = useState('');
-  const [cedula, setCedula] = useState('');
-  const [cargo, setCargo] = useState('Trabajador Operativo');
-  const [vistaAdmin, setVistaAdmin] = useState(false);
-  const [registros, setRegistros] = useState([]);
+  const streamRef = useRef(null);
+  const [session, setSession] = useState(readSession);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [mode, setMode] = useState("register");
+  const [person, setPerson] = useState({ fullName: "", documentId: "", role: "Trabajador Operativo", email: "" });
+  const [code, setCode] = useState({ documentId: "", pin: "" });
+  const [engine, setEngine] = useState(null);
+  const [modelState, setModelState] = useState("loading");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+
+  const authorized = session.token && ["admin", "scanner"].includes(session.role);
+
+  useEffect(() => () => stopStream(streamRef.current), []);
 
   useEffect(() => {
-    const guardados = JSON.parse(localStorage.getItem('nexflor_asistencia') || '[]');
-    setRegistros(guardados);
-  }, []);
+    if (!authorized) return undefined;
+    let active = true;
+    setModelState("loading");
+    loadFaceModels()
+      .then(() => { if (active) setModelState("ready"); })
+      .catch((modelError) => {
+        if (active) {
+          setModelState("error");
+          setError(`No se pudieron cargar los modelos faciales: ${modelError.message}`);
+        }
+      });
+    return () => { active = false; };
+  }, [authorized]);
 
-  const iniciarCamara = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-    } catch (err) {
-      alert("No se pudo acceder a la cámara web. Verifica los permisos del navegador.");
-    }
-  };
-
-  const tomarFoto = () => {
-    if (videoRef.current) {
-      const canvas = document.createElement('canvas');
-      canvas.width = videoRef.current.videoWidth || 320;
-      canvas.height = videoRef.current.videoHeight || 240;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-        setFoto(canvas.toDataURL('image/png'));
-      }
-    }
-  };
-
-  const registrarIngreso = (e) => {
-    e.preventDefault();
-    if (!nombre || !cedula || !foto) {
-      alert("Por favor completa los campos y tómate la foto en vivo.");
-      return;
-    }
-
-    const ahora = new Date();
-    const horaActual = ahora.getHours();
-    const minutoActual = ahora.getMinutes();
-    
-    // Regla institucional de puntualidad: Base a las 6:00 a.m.
-    const esTarde = horaActual > 6 || (horaActual === 6 && minutoActual > 0);
-
-    const nuevoRegistro = {
-      nombre,
-      cedula,
-      cargo,
-      foto,
-      hora: ahora.toLocaleTimeString(),
-      tarde: esTarde
+  useEffect(() => {
+    if (!authorized) return undefined;
+    let active = true;
+    const refresh = () => {
+      faceApi("/face/status", session.token)
+        .then((status) => {
+          if (active) setEngine(status);
+        })
+        .catch((requestError) => {
+          if (active) {
+            setError(requestError.message);
+            setEngine(null);
+          }
+        });
     };
+    refresh();
+    const timer = engine?.modelReady
+      ? null
+      : window.setInterval(refresh, 3000);
+    return () => {
+      active = false;
+      if (timer !== null) window.clearInterval(timer);
+    };
+  }, [authorized, session.token, engine?.modelReady]);
 
-    const actualizados = [nuevoRegistro, ...registros];
-    setRegistros(actualizados);
-    localStorage.setItem('nexflor_asistencia', JSON.stringify(actualizados));
-    
-    alert(esTarde ? "⚠️ Ingreso registrado con RETRASO (Alerta enviada al panel del administrador)." : "✅ ¡Ingreso puntual registrado con éxito en Flores El Trigal!");
-    
-    setNombre('');
-    setCedula('');
-    setFoto(null);
-  };
+  async function login(event) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      const body = await api("/staff/login", {
+        method: "POST",
+        body: JSON.stringify({ username, password }),
+      });
+      saveSession(body);
+      setSession(readSession());
+      setPassword("");
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function logout() {
+    stopStream(streamRef.current);
+    streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
+    clearSession();
+    setSession(readSession());
+    setEngine(null);
+    setModelState("loading");
+    setMessage("");
+  }
+
+  async function startCamera() {
+    setError("");
+    setMessage("");
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error("Este navegador no permite abrir la cámara. Usa una conexión HTTPS.");
+      }
+      stopStream(streamRef.current);
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+      streamRef.current = stream;
+      if (videoRef.current) videoRef.current.srcObject = stream;
+    } catch (cameraError) {
+      setError(cameraError.message || "No se pudo abrir la cámara. Revisa sus permisos.");
+    }
+  }
+
+  async function captureFrames() {
+    const video = videoRef.current;
+    if (!video || video.readyState < 2 || !video.videoWidth || !video.videoHeight) {
+      throw new Error("Enciende la cámara y espera a que aparezca la imagen.");
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = 320;
+    canvas.height = Math.round((video.videoHeight / video.videoWidth) * canvas.width);
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("No se pudo preparar la captura de la cámara.");
+
+    const frames = [];
+    for (let index = 0; index < 4; index += 1) {
+      if (index > 0) await new Promise((resolve) => setTimeout(resolve, 650));
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      frames.push(canvas.toDataURL("image/jpeg", 0.78));
+    }
+    return frames;
+  }
+
+  async function register(event) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      const frames = await captureFrames();
+      const recognition = engine?.modelReady ? { frames } : await analyzeFrames(frames);
+      const result = await faceApi("/face/register", session.token, {
+        method: "POST",
+        body: JSON.stringify({ ...person, consent: true, ...recognition }),
+      });
+      setMessage(result.message);
+      if (!result.already) setPerson({ fullName: "", documentId: "", role: "Trabajador Operativo", email: "" });
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function verifyFace() {
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      const frames = await captureFrames();
+      const recognition = engine?.modelReady ? { frames } : await analyzeFrames(frames);
+      const result = await faceApi("/face/verify", session.token, {
+        method: "POST",
+        body: JSON.stringify(recognition),
+      });
+      setMessage(result.message);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function verifyCode(event) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      const result = await faceApi("/face/code", session.token, {
+        method: "POST",
+        body: JSON.stringify(code),
+      });
+      setMessage(result.message);
+      setCode({ documentId: "", pin: "" });
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!authorized) {
+    return (
+      <main className="login">
+        <form className="card stack" onSubmit={login}>
+          <p className="eyebrow">NEXFLOR ID · Acceso autorizado</p>
+          <h1>Ingreso de personal</h1>
+          <p className="lede">Inicia sesión con la cuenta de escaneo creada por un administrador.</p>
+          <label>Usuario<input autoComplete="username" value={username} onChange={(event) => setUsername(event.target.value)} required /></label>
+          <label>Contraseña<input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required /></label>
+          {error && <p className="status error" role="alert">{error}</p>}
+          <button className="button" type="submit" disabled={busy}>{busy ? "Verificando…" : "Entrar"}</button>
+          <Link to="/entrar">Volver al taller</Link>
+        </form>
+      </main>
+    );
+  }
 
   return (
-    <div className="max-w-2xl mx-auto p-6 text-white">
-      <Link to="/" className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 text-xs font-semibold mb-6">
-        <ArrowLeft size={16} /> Volver al Inicio
-      </Link>
+    <main className="max-w-3xl mx-auto p-6 text-white">
+      <div className="flex items-center justify-between mb-6">
+        <Link to="/entrar" className="text-emerald-400 hover:text-emerald-300 text-sm">Volver</Link>
+        <button type="button" onClick={logout} className="text-sm text-slate-300 hover:text-white">Salir de {session.name || "la cuenta"}</button>
+      </div>
+      <section className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6">
+        <header className="border-b border-slate-700 pb-5">
+          <p className="text-emerald-300 text-xs font-semibold uppercase tracking-wide">Flores El Trigal</p>
+          <h1 className="text-2xl font-bold mt-2">NEXFLOR ID</h1>
+          <p className="text-sm text-slate-300 mt-2">Registro y verificación de ingreso. Las plantillas se guardan cifradas; no se conserva la fotografía capturada.</p>
+        </header>
 
-      <div className="bg-slate-800 border border-slate-700 rounded-2xl p-8 shadow-2xl space-y-6">
-        
-        <div className="flex justify-between items-center pb-4 border-b border-slate-700">
-          <div>
-            <span className="bg-emerald-600/30 text-emerald-300 text-xs font-semibold px-3 py-1 rounded-full border border-emerald-500/30">
-              Flores El Trigal
-            </span>
-            <h1 className="text-2xl font-bold mt-2">NEXFLOR Id - Control de Asistencia</h1>
-          </div>
-          <button 
-            onClick={() => setVistaAdmin(!vistaAdmin)}
-            className="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition"
-          >
-            <Users size={16} /> {vistaAdmin ? 'Ir a Registro' : 'Panel Admin'}
-          </button>
+        <div className="rounded-xl border border-slate-700 bg-slate-900 p-4 text-sm">
+          <strong>Motor de reconocimiento: </strong>
+          {engine?.modelReady ? "Servidor listo" : modelState === "ready" ? "Navegador listo" : modelState === "error" ? "No disponible" : "Cargando modelos…"}
+          <p className="text-slate-400 mt-1">
+            {engine?.modelReady
+              ? "El servidor analiza las capturas y valida el acceso."
+              : modelState === "ready"
+                ? "El navegador mide el rostro; el servidor compara la plantilla, aplica la aprobación y registra el ingreso."
+                : engine?.notice || engine?.message || "Preparando el reconocimiento facial…"}
+          </p>
         </div>
 
-        {!vistaAdmin ? (
-          <form onSubmit={registrarIngreso} className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium mb-1">Nombre Completo del Colaborador</label>
-              <input 
-                type="text" 
-                value={nombre} 
-                onChange={e => setNombre(e.target.value)} 
-                required 
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-emerald-500 outline-none" 
-                placeholder="Ej. Camilo Tobón" 
-              />
-            </div>
+        <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-900 p-1" role="tablist" aria-label="Acciones de Nexflor ID">
+          <button type="button" role="tab" aria-selected={mode === "register"} onClick={() => { setMode("register"); setError(""); setMessage(""); }} className={`rounded-lg px-3 py-2 text-sm ${mode === "register" ? "bg-emerald-600 text-white" : "text-slate-300"}`}>Registrar persona</button>
+          <button type="button" role="tab" aria-selected={mode === "verify"} onClick={() => { setMode("verify"); setError(""); setMessage(""); }} className={`rounded-lg px-3 py-2 text-sm ${mode === "verify" ? "bg-emerald-600 text-white" : "text-slate-300"}`}>Marcar ingreso</button>
+        </div>
 
-            <div>
-              <label className="block text-xs font-medium mb-1">Número de Cédula</label>
-              <input 
-                type="text" 
-                value={cedula} 
-                onChange={e => setCedula(e.target.value)} 
-                required 
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-emerald-500 outline-none" 
-                placeholder="Ej. 1012345678" 
-              />
-            </div>
+        <div className="space-y-3">
+          <button type="button" onClick={startCamera} className="rounded-lg bg-blue-600 hover:bg-blue-500 px-4 py-2 text-sm font-semibold">Encender cámara</button>
+          <video ref={videoRef} autoPlay playsInline muted className="w-full max-h-80 rounded-xl bg-black object-cover" aria-label="Vista previa de cámara" />
+          <p className="text-xs text-slate-400">Cuando captures, parpadea o mueve un poco la cabeza durante los segundos de lectura.</p>
+        </div>
 
-            <div>
-              <label className="block text-xs font-medium mb-1">Cargo en el Cultivo</label>
-              <select 
-                value={cargo} 
-                onChange={e => setCargo(e.target.value)} 
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-emerald-500 outline-none"
-              >
-                <option value="Trabajador Operativo">Trabajador Operativo</option>
-                <option value="Supervisor de Campo">Supervisor de Campo</option>
-                <option value="Gerente">Gerente</option>
-                <option value="Personal Administrativo">Personal Administrativo</option>
-              </select>
-            </div>
-
-            <div className="space-y-2 pt-2">
-              <button 
-                type="button" 
-                onClick={iniciarCamara} 
-                className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition"
-              >
-                <Camera size={16} /> Encender Cámara Web
-              </button>
-
-              <div className="relative bg-black rounded-xl overflow-hidden h-44 flex items-center justify-center border border-slate-700">
-                <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
-              </div>
-
-              <button 
-                type="button" 
-                onClick={tomarFoto} 
-                className="w-full bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl text-xs font-semibold transition"
-              >
-                Capturar Fotografía en Vivo
-              </button>
-              {foto && <p className="text-emerald-400 text-xs font-medium text-center">✓ Fotografía vinculada correctamente</p>}
-            </div>
-
-            <button 
-              type="submit" 
-              className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 rounded-xl text-sm transition shadow-lg mt-4"
-            >
-              Registrar Check-in (Hora Base: 6:00 a.m.)
+        {mode === "register" ? (
+          <form onSubmit={register} className="grid gap-4 sm:grid-cols-2">
+            <label className="text-sm">Nombre completo<input className="w-full mt-1 rounded-lg bg-slate-900 border border-slate-600 p-3" value={person.fullName} onChange={(event) => setPerson({ ...person, fullName: event.target.value })} required /></label>
+            <label className="text-sm">Documento de identidad<input className="w-full mt-1 rounded-lg bg-slate-900 border border-slate-600 p-3" value={person.documentId} onChange={(event) => setPerson({ ...person, documentId: event.target.value })} minLength={4} maxLength={20} required /></label>
+            <label className="text-sm">Cargo<input className="w-full mt-1 rounded-lg bg-slate-900 border border-slate-600 p-3" value={person.role} onChange={(event) => setPerson({ ...person, role: event.target.value })} /></label>
+            <label className="text-sm">Correo (opcional)<input type="email" className="w-full mt-1 rounded-lg bg-slate-900 border border-slate-600 p-3" value={person.email} onChange={(event) => setPerson({ ...person, email: event.target.value })} /></label>
+            <label className="sm:col-span-2 flex gap-3 text-xs leading-5 text-slate-300">
+              <input type="checkbox" required className="mt-1 accent-emerald-500" />
+              <span>{engine?.consent || "Autorizo la captura y cifrado de una plantilla facial para comprobar mi ingreso; el registro requiere aprobación administrativa."}</span>
+            </label>
+            <button type="submit" disabled={busy || modelState !== "ready" || !engine} className="sm:col-span-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 px-4 py-3 font-bold text-slate-950">
+              {busy ? "Procesando captura…" : "Enviar registro para aprobación"}
             </button>
           </form>
         ) : (
           <div className="space-y-4">
-            <h2 className="text-sm font-bold text-emerald-300 flex items-center gap-2">
-              <Clock size={16} /> Panel de Administración y Alertas en Tiempo Real
-            </h2>
-            <p className="text-xs text-slate-400">Control de puntualidad comparado con el turno de las 6:00 a.m. y ausentismo.</p>
-
-            <div className="space-y-3 mt-4">
-              {registros.length === 0 ? (
-                <p className="text-slate-500 text-xs text-center py-10">No hay registros de asistencia guardados en este navegador.</p>
-              ) : (
-                registros.map((reg, idx) => (
-                  <div key={idx} className="bg-slate-900/60 p-4 rounded-xl flex items-center justify-between border border-slate-700 text-xs">
-                    <div className="flex items-center gap-3">
-                      <img src={reg.foto} alt="Colaborador" className="w-12 h-12 rounded-full object-cover border border-emerald-500" />
-                      <div>
-                        <h4 className="font-bold text-sm text-white">{reg.nombre}</h4>
-                        <p className="text-slate-400">{reg.cargo} • Cédula: {reg.cedula}</p>
-                        <p className="text-slate-300 mt-0.5">Ingreso: <strong>{reg.hora}</strong></p>
-                      </div>
-                    </div>
-                    <div>
-                      {reg.tarde ? (
-                        <span className="bg-red-500/20 text-red-400 border border-red-500/40 px-3 py-1 rounded-full font-semibold flex items-center gap-1">
-                          <AlertTriangle size={12} /> Tarde (Alerta)
-                        </span>
-                      ) : (
-                        <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-3 py-1 rounded-full font-semibold flex items-center gap-1">
-                          <ShieldCheck size={12} /> Puntual
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+            <button type="button" onClick={verifyFace} disabled={busy || modelState !== "ready" || !engine} className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 px-4 py-3 font-bold text-slate-950">
+              {busy ? "Verificando…" : "Verificar rostro e ingresar"}
+            </button>
+            <form onSubmit={verifyCode} className="grid gap-3 sm:grid-cols-3">
+              <input aria-label="Documento" placeholder="Documento" value={code.documentId} onChange={(event) => setCode({ ...code, documentId: event.target.value })} required />
+              <input aria-label="Código alternativo" placeholder="Código de 6 dígitos" inputMode="numeric" value={code.pin} onChange={(event) => setCode({ ...code, pin: event.target.value })} required />
+              <button type="submit" disabled={busy} className="rounded-lg bg-slate-600 hover:bg-slate-500 px-3 py-2 text-sm">Usar código alternativo</button>
+            </form>
           </div>
         )}
 
-      </div>
-    </div>
+        {error && <p className="status error" role="alert">{error}</p>}
+        {message && <p className="status" role="status">{message}</p>}
+      </section>
+    </main>
   );
 }

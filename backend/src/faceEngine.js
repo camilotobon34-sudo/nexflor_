@@ -36,7 +36,7 @@ async function load() {
     ready = true;
   } catch (error) {
     console.error("Reconocimiento facial:", error instanceof Error ? error.message : error);
-    failed = "El motor de reconocimiento no está listo en este servidor (Node 24 no trae el binario de TensorFlow y aquí no hay Python para compilarlo). El acceso por rostro no se concede.";
+    failed = "El motor de reconocimiento del servidor no está disponible. Se requiere el análisis facial en el navegador para procesar el acceso.";
     const failure = new Error(failed);
     failure.status = 503;
     throw failure;

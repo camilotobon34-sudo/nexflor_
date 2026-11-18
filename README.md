@@ -7,6 +7,8 @@ Un sitio que cuida y enseña a las personas en el trabajo.
 - `frontend` — la página del taller
 - `backend` — los cursos, el equipo y el administrador
 
+El panel lateral agrupa sus accesos en **Taller**, **Seguimiento** y **Herramientas**. Las cuentas creadas desde el acceso al taller aparecen en Administración → Equipo con su ID y avance detallado por curso.
+
 ## Cómo abrirlo
 
 1. Instala Node.js LTS.
@@ -19,11 +21,11 @@ El administrador crea las cuentas de escaneo desde Administración → Asistenci
 
 ## Reconocimiento facial
 
-La sección está en el menú Acceso, dentro del mismo sitio. Quien escanea inicia sesión con la cuenta de personal. Los reportes, las alertas y las aprobaciones están en Administración → Asistencia, y el servidor rechaza esas consultas si la cuenta no es de administrador.
+La sección **Nexflor ID** requiere iniciar sesión con una cuenta de escaneo. Los reportes, las alertas, las aprobaciones y la creación de esas cuentas están en Administración → Asistencia, solo para administradores. Los registros nuevos se guardan en la base compartida y aparecen pendientes de aprobación.
 
-La comparación y la decisión de acceso están en el servidor. Las plantillas se cifran con `backend/data/face.key`, que se crea solo y no se sube a git. Copia ese archivo si mueves el proyecto, o las plantillas guardadas no se podrán leer. También puedes definir la variable `FACE_DATA_KEY` con 32 bytes en hexadecimal.
+La comparación y la decisión de acceso están en el servidor. Las plantillas se cifran con `backend/data/face.key`, que se crea solo y no se sube a git. Copia ese archivo si mueves el proyecto, o las plantillas guardadas no se podrán leer. En producción, define `FACE_DATA_KEY` con 32 bytes en hexadecimal.
 
-En este computador el motor nativo no arranca: Node.js 24 no tiene el binario de `@tensorflow/tfjs-node` y no hay Python para compilarlo. El navegador mide el rostro y el servidor decide si entra. Para medirlo en el servidor, instala Node.js 20 LTS, entra a `backend` y ejecuta `npm install @tensorflow/tfjs-node`. Si prefieres un servicio externo, Amazon Rekognition (`CompareFaces`) es la opción práctica; no dejes las llaves dentro del código.
+Los modelos necesarios están en `frontend/public/models` y Vite los incluye en el build. Si el motor del servidor no arranca, la interfaz mide el rostro en el navegador y el servidor compara la plantilla, verifica la aprobación y registra el ingreso. La disponibilidad depende de que los modelos permanezcan en el despliegue.
 
 En el celular la cámara pide HTTPS. El sitio de desarrollo usa un certificado local: abre `https://` y la dirección de este computador en la red, y acepta el aviso del navegador. En este mismo computador, `https://127.0.0.1:5173` también sirve.
 
@@ -31,7 +33,7 @@ No se guardan fotos. Una persona nueva queda pendiente hasta que el administrado
 
 ## Nexflor Posture
 
-La sección está en el menú **Nexflor Posture** y analiza la postura en el navegador con MediaPipe. La cámara requiere HTTPS o `localhost`; la vista frontal mide alineación lateral y la vista de perfil estima cabeza adelantada y tronco inclinado. Son señales preventivas, no diagnósticos médicos.
+La sección está en el menú **Nexflor Posture** y, por ahora, ofrece una simulación educativa de alerta sonora. No abre la cámara ni detecta postura real; no debe usarse como monitoreo o diagnóstico médico.
 
 ## Preparación para producción
 

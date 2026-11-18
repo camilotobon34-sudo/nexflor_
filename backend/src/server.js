@@ -47,6 +47,16 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+function requireWorker(req, res, next) {
+  const session = readSession(tokenOf(req));
+  const workers = store.readDb().workers || [];
+  if (!session || session.role !== "worker" || !workers.some((worker) => worker.id === session.id)) {
+    return res.status(401).json({ message: "Entra con una cuenta de trabajador." });
+  }
+  req.session = session;
+  next();
+}
+
 function requireScanner(req, res, next) {
   const session = readSession(tokenOf(req));
   if (!session || (session.role !== "admin" && (session.role !== "scanner" || !isActiveStaff(session.id)))) {
@@ -57,8 +67,7 @@ function requireScanner(req, res, next) {
 }
 
 function workerId(req) {
-  const session = readSession(tokenOf(req));
-  return session?.role === "worker" ? session.id : null;
+  return req.session?.role === "worker" ? req.session.id : null;
 }
 
 app.post("/api/admin/login", (req, res) => {
@@ -102,7 +111,7 @@ app.get("/api/face/status", (_req, res) => {
     ...summary,
     modelReady: engine.ready,
     engine: engine.ready ? "server" : "browser",
-    notice: engine.ready ? "" : "El reconocimiento se procesa en el navegador y el servidor valida el resultado.",
+    notice: engine.ready ? "" : "El rostro se mide en el navegador; el servidor compara la plantilla, aplica la aprobación y registra el ingreso.",
     consent: face.CONSENT_TEXT,
   });
 });
@@ -256,37 +265,37 @@ app.get("/api/health", (_req, res) => {
   res.json(store.health());
 });
 
-app.get("/api/me", (req, res) => {
+app.get("/api/me", requireWorker, (req, res) => {
   res.json(store.me(workerId(req)));
 });
 
-app.get("/api/dashboard", (req, res) => {
+app.get("/api/dashboard", requireWorker, (req, res) => {
   res.json(store.dashboard(workerId(req)));
 });
 
-app.get("/api/courses", (req, res) => {
+app.get("/api/courses", requireWorker, (req, res) => {
   res.json(store.listCourses(workerId(req)));
 });
 
-app.get("/api/courses/:id", (req, res) => {
+app.get("/api/courses/:id", requireWorker, (req, res) => {
   const course = store.getCourse(req.params.id, workerId(req));
   if (!course) return res.status(404).json({ message: "Ese curso no está en el taller." });
   res.json(course);
 });
 
-app.post("/api/courses/:id/lessons/:lessonId/complete", (req, res) => {
+app.post("/api/courses/:id/lessons/:lessonId/complete", requireWorker, (req, res) => {
   const course = store.toggleLesson(req.params.id, req.params.lessonId, workerId(req));
   if (!course) return res.status(404).json({ message: "No encontré esa lección." });
   res.json(course);
 });
 
-app.get("/api/courses/:id/quiz", (req, res) => {
+app.get("/api/courses/:id/quiz", requireWorker, (req, res) => {
   const quiz = store.getQuiz(req.params.id, workerId(req));
   if (!quiz) return res.status(404).json({ message: "Ese curso no tiene práctica." });
   res.json(quiz);
 });
 
-app.post("/api/courses/:id/quiz", (req, res) => {
+app.post("/api/courses/:id/quiz", requireWorker, (req, res) => {
   try {
     const result = store.submitQuiz(req.params.id, req.body?.answers, workerId(req));
     if (!result) return res.status(404).json({ message: "Ese curso no tiene práctica." });
@@ -296,11 +305,11 @@ app.post("/api/courses/:id/quiz", (req, res) => {
   }
 });
 
-app.get("/api/team", (_req, res) => {
+app.get("/api/team", requireWorker, (_req, res) => {
   res.json(store.listTeam());
 });
 
-app.get("/api/progress", (req, res) => {
+app.get("/api/progress", requireWorker, (req, res) => {
   res.json(store.progressReport(workerId(req)));
 });
 
