@@ -120,6 +120,48 @@ function drawPoses(canvas, video, poses, selectedTrackId, postureStatuses) {
   }
 }
 
+function waitForVideoFrame(video) {
+  return new Promise((resolve, reject) => {
+    let timeoutId;
+    const cleanup = () => {
+      window.clearTimeout(timeoutId);
+      video.removeEventListener("loadeddata", checkVideoFrame);
+      video.removeEventListener("playing", checkVideoFrame);
+    };
+    const checkVideoFrame = () => {
+      if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+        cleanup();
+        resolve();
+      }
+    };
+
+    timeoutId = window.setTimeout(() => {
+      cleanup();
+      reject(new Error("La cámara no entregó imagen. Comprueba que otra aplicación no la esté usando y vuelve a intentarlo."));
+    }, 10000);
+    video.addEventListener("loadeddata", checkVideoFrame);
+    video.addEventListener("playing", checkVideoFrame);
+    checkVideoFrame();
+  });
+}
+
+async function startVideoPlayback(video) {
+  let timeoutId;
+  try {
+    await Promise.race([
+      video.play(),
+      new Promise((_, reject) => {
+        timeoutId = window.setTimeout(() => {
+          reject(new Error("La cámara se activó, pero el video no inició. Comprueba la cámara e inténtalo de nuevo."));
+        }, 10000);
+      }),
+    ]);
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+  await waitForVideoFrame(video);
+}
+
 export default function Posture() {
   const videoRef = useRef(null);
   const overlayRef = useRef(null);
@@ -230,11 +272,20 @@ export default function Posture() {
       }
       streamRef.current = stream;
       if (!videoRef.current) throw new Error("No se pudo preparar la vista de cámara.");
-      videoRef.current.srcObject = streamRef.current;
-      setCameraAspect(`${videoRef.current.videoWidth || 4} / ${videoRef.current.videoHeight || 3}`);
-      await videoRef.current.play();
-      if (startupId !== startupIdRef.current) return;
+      const video = videoRef.current;
+      video.srcObject = streamRef.current;
+      setCameraAspect(`${video.videoWidth || 4} / ${video.videoHeight || 3}`);
       setCameraOn(true);
+      try {
+        await startVideoPlayback(video);
+      } catch (playbackError) {
+        if (startupId === startupIdRef.current) {
+          stopCamera();
+          setError(playbackError.message || "No se pudo mostrar la imagen de la cámara.");
+        }
+        return;
+      }
+      if (startupId !== startupIdRef.current) return;
 
       const tf = await import("@tensorflow/tfjs");
       if (startupId !== startupIdRef.current) return;
@@ -395,7 +446,7 @@ export default function Posture() {
             ? modelReady
               ? "Cámara activa · análisis local"
               : loading
-                ? "Cámara activa · cargando modelo"
+                ? "Cámara activa · preparando análisis"
                 : "Cámara activa · análisis no disponible"
             : "Cámara apagada"}
         </span>
@@ -435,7 +486,7 @@ export default function Posture() {
             <p className="mt-3 text-sm text-slate-600" role="status" aria-live="polite">
               {!modelReady
                 ? loading
-                  ? "Cámara encendida; preparando el modelo de detección. Puedes detenerla mientras carga."
+                  ? "Cámara encendida; preparando el análisis local. Puedes detenerla mientras carga."
                   : "El análisis no está disponible. Detén y vuelve a iniciar la cámara para intentarlo de nuevo."
                 : poseCount === 0
                 ? "Buscando personas en el encuadre…"
