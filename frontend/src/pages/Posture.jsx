@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Activity, AlertTriangle, ArrowLeft, Camera, CameraOff, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { chooseTrackedPose } from "../postureTracking.js";
+import { chooseTrackedPose, updateSustainedWarnings } from "../postureTracking.js";
 
 const KEYPOINT_THRESHOLD = 0.3;
 const ALERT_ANGLE = 28;
@@ -38,7 +38,7 @@ function torsoAngle(pose) {
   return Math.round(Math.atan2(Math.abs(shoulders.x - hips.x), vertical) * 180 / Math.PI);
 }
 
-function drawPoses(canvas, video, poses, selectedTrackId, postureWarning) {
+function drawPoses(canvas, video, poses, selectedTrackId, warningTrackIds) {
   if (!canvas || !video.videoWidth || !video.videoHeight) return;
   if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
     canvas.width = video.videoWidth;
@@ -51,7 +51,8 @@ function drawPoses(canvas, video, poses, selectedTrackId, postureWarning) {
   context.lineWidth = Math.max(2, canvas.width / 240);
   for (const [index, pose] of poses.entries()) {
     const selected = pose.id === selectedTrackId;
-    const color = selected && postureWarning ? "#fb7185" : selected ? "#34d399" : "#60a5fa";
+    const postureWarning = warningTrackIds.includes(pose.id);
+    const color = postureWarning ? "#fb7185" : selected ? "#34d399" : "#60a5fa";
     const keypoints = new Map(pose.keypoints.map((point) => [point.name, point]));
     const visible = pose.keypoints.filter((point) => point.score >= KEYPOINT_THRESHOLD);
     if (!visible.length) continue;
@@ -90,7 +91,8 @@ function drawPoses(canvas, video, poses, selectedTrackId, postureWarning) {
     context.font = `600 ${Math.max(14, canvas.width / 32)}px sans-serif`;
     context.fillStyle = color;
     const label = Number.isFinite(pose.id) ? `Pista ${pose.id + 1}` : `Persona ${index + 1}`;
-    context.fillText(selected ? `Seguimiento · ${label}` : label, x + 5, Math.max(18, y - 8));
+    const caption = postureWarning ? `Mala postura · ${label}` : selected ? `Seguimiento · ${label}` : label;
+    context.fillText(caption, x + 5, Math.max(18, y - 8));
   }
 }
 
@@ -105,7 +107,7 @@ export default function Posture() {
   const frameBusyRef = useRef(false);
   const lastFrameRef = useRef(0);
   const startupIdRef = useRef(0);
-  const badSinceRef = useRef(0);
+  const warningSinceByTrackRef = useRef(new Map());
   const lastBeepRef = useRef(0);
   const selectedTrackIdRef = useRef(null);
   const lastCenterRef = useRef(null);
@@ -113,6 +115,7 @@ export default function Posture() {
   const [loading, setLoading] = useState(false);
   const [modelReady, setModelReady] = useState(false);
   const [alertActive, setAlertActive] = useState(false);
+  const [alertTrackIds, setAlertTrackIds] = useState([]);
   const [angle, setAngle] = useState(null);
   const [poseCount, setPoseCount] = useState(0);
   const [trackId, setTrackId] = useState(null);
@@ -149,7 +152,7 @@ export default function Posture() {
     if (videoRef.current) videoRef.current.srcObject = null;
     detectorRef.current?.dispose();
     detectorRef.current = null;
-    badSinceRef.current = 0;
+    warningSinceByTrackRef.current.clear();
     selectedTrackIdRef.current = null;
     lastCenterRef.current = null;
     frameBusyRef.current = false;
@@ -159,6 +162,7 @@ export default function Posture() {
       setLoading(false);
       setModelReady(false);
       setAlertActive(false);
+      setAlertTrackIds([]);
       setAngle(null);
       setPoseCount(0);
       setTrackId(null);
@@ -231,6 +235,7 @@ export default function Posture() {
 
       selectedTrackIdRef.current = null;
       lastCenterRef.current = null;
+      warningSinceByTrackRef.current.clear();
       setTrackId(null);
       setTrackVisible(false);
       setPoseCount(0);
@@ -259,12 +264,29 @@ export default function Posture() {
         if (video?.readyState >= 2) {
           const poses = await detectorRef.current.estimatePoses(video, { maxPoses: 6, flipHorizontal: false });
           setPoseCount((current) => current === poses.length ? current : poses.length);
+          const now = performance.now();
+          const warningTrackIds = updateSustainedWarnings(
+            poses,
+            warningSinceByTrackRef.current,
+            now,
+            (candidate) => {
+              const candidateAngle = torsoAngle(candidate);
+              return candidateAngle !== null && candidateAngle >= ALERT_ANGLE;
+            },
+            ALERT_DELAY_MS,
+          );
+          setAlertTrackIds((current) => current.length === warningTrackIds.length
+            && current.every((trackId, index) => trackId === warningTrackIds[index]) ? current : warningTrackIds);
+          setAlertActive(warningTrackIds.length > 0);
+          if (warningTrackIds.length > 0 && now - lastBeepRef.current >= 2200) {
+            playAlert();
+            lastBeepRef.current = now;
+          }
           const tracked = chooseTrackedPose(poses, selectedTrackIdRef.current);
           selectedTrackIdRef.current = tracked.trackId;
           setTrackId((current) => current === tracked.trackId ? current : tracked.trackId);
           const pose = tracked.pose;
           setTrackVisible(Boolean(pose));
-          let shouldAlert = false;
           if (pose) {
             const shoulders = midpoint(pose, "left_shoulder", "right_shoulder");
             const hips = midpoint(pose, "left_hip", "right_hip");
@@ -280,28 +302,13 @@ export default function Posture() {
             lastCenterRef.current = center;
             const measuredAngle = torsoAngle(pose);
             setAngle(measuredAngle);
-            const now = performance.now();
-            if (measuredAngle !== null && measuredAngle >= ALERT_ANGLE) {
-              if (!badSinceRef.current) badSinceRef.current = now;
-              shouldAlert = now - badSinceRef.current >= ALERT_DELAY_MS;
-              setAlertActive((active) => active === shouldAlert ? active : shouldAlert);
-              if (shouldAlert && now - lastBeepRef.current >= 2200) {
-                playAlert();
-                lastBeepRef.current = now;
-              }
-            } else {
-              badSinceRef.current = 0;
-              setAlertActive(false);
-            }
           } else {
             lastCenterRef.current = null;
             setTrackVisible(false);
             setMovementDetected(false);
             setAngle(null);
-            setAlertActive(false);
-            badSinceRef.current = 0;
           }
-          drawPoses(overlayRef.current, video, poses, tracked.trackId, shouldAlert);
+          drawPoses(overlayRef.current, video, poses, tracked.trackId, warningTrackIds);
         }
 
       } catch (analysisError) {
@@ -318,11 +325,9 @@ export default function Posture() {
   function chooseAnotherPerson() {
     selectedTrackIdRef.current = null;
     lastCenterRef.current = null;
-    badSinceRef.current = 0;
     setTrackId(null);
     setTrackVisible(false);
     setMovementDetected(false);
-    setAlertActive(false);
     setAngle(null);
   }
 
@@ -399,7 +404,7 @@ export default function Posture() {
                   : !trackVisible
                     ? `Se perdió de vista la pista ${trackId + 1}; no se cambiará a otra persona.`
                   : poseCount > 1
-                    ? `Siguiendo a una persona entre ${poseCount} detectadas · pista ${trackId + 1}.`
+                    ? `Siguiendo la pista ${trackId + 1}; evaluando la postura de ${poseCount} personas.`
                     : `Persona en seguimiento · pista ${trackId + 1}.`}
             </p>
           )}
@@ -415,7 +420,7 @@ export default function Posture() {
                 <h2 className="text-xl">{alertActive ? "Revisa tu alineación" : cameraOn ? "Postura en observación" : "Listo para empezar"}</h2>
                 <p className="text-sm text-slate-600">
                   {alertActive
-                    ? "El torso se mantiene inclinado. Haz una pausa y reajusta tu posición."
+                    ? `Mala postura sostenida en ${alertTrackIds.map((id) => `pista ${id + 1}`).join(", ")}. Reajusta la posición.`
                     : trackVisible
                       ? `Persona seguida · movimiento ${movementDetected ? "detectado" : "estable"}${angle !== null ? ` · inclinación del torso: ${angle}°` : ""}`
                     : cameraOn && angle !== null
@@ -434,7 +439,7 @@ export default function Posture() {
               <li>Enciende la cámara y encuadra a las personas de cuerpo completo; se dibujan hasta seis esqueletos detectados.</li>
               <li>El sistema selecciona la persona con detección más clara y mantiene su seguimiento aunque detecte a otras.</li>
               <li>Si pierde de vista a la persona, no cambia a otra; pulsa “Reiniciar seguimiento” para seleccionarla de nuevo.</li>
-              <li>Tras 1,6 segundos de inclinación sostenida de la persona seguida, aparece una alerta visual y suena un aviso.</li>
+              <li>Tras 1,6 segundos de inclinación sostenida de cualquier persona detectada, su esqueleto se resalta y suena un aviso.</li>
             </ol>
             <p className="mt-4 rounded-lg bg-emerald-50 p-3 text-xs leading-relaxed text-emerald-950">
               <CheckCircle2 className="mr-1 inline" size={15} />
