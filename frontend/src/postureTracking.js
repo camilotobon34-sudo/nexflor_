@@ -36,3 +36,9 @@ export function updateSustainedWarnings(poses, warningSinceByTrack, now, isBadPo
 
   return warningTrackIds.sort((left, right) => left - right);
 }
+
+export function classifyPosture(angle, warningActive, alertAngle) {
+  if (warningActive) return "bad";
+  if (!Number.isFinite(angle)) return "unknown";
+  return angle >= alertAngle ? "leaning" : "good";
+}

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { chooseTrackedPose, updateSustainedWarnings } from "../src/postureTracking.js";
+import { chooseTrackedPose, classifyPosture, updateSustainedWarnings } from "../src/postureTracking.js";
 
 test("selects the most confident tracked person when tracking starts", () => {
   const first = { id: 1, score: 0.72 };
@@ -42,4 +42,11 @@ test("resets the warning timer when posture improves or a person disappears", ()
     [],
   );
   assert.deepEqual([...warningSince], []);
+});
+
+test("classifies good, rising-risk, sustained-risk, and unmeasurable postures", () => {
+  assert.equal(classifyPosture(12, false, 28), "good");
+  assert.equal(classifyPosture(28, false, 28), "leaning");
+  assert.equal(classifyPosture(12, true, 28), "bad");
+  assert.equal(classifyPosture(null, false, 28), "unknown");
 });

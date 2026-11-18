@@ -1,12 +1,36 @@
 import { useEffect, useRef, useState } from "react";
 import { Activity, AlertTriangle, ArrowLeft, Camera, CameraOff, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { chooseTrackedPose, updateSustainedWarnings } from "../postureTracking.js";
+import { chooseTrackedPose, classifyPosture, updateSustainedWarnings } from "../postureTracking.js";
 
 const KEYPOINT_THRESHOLD = 0.3;
 const ALERT_ANGLE = 28;
 const ALERT_DELAY_MS = 1600;
 const FRAME_INTERVAL_MS = 140;
+const POSTURE_LABELS = {
+  good: "Postura adecuada",
+  leaning: "Inclinación detectada",
+  bad: "Mala postura · alarma",
+  unknown: "No evaluable",
+};
+const POSTURE_SHORT_LABELS = {
+  good: "BIEN",
+  leaning: "INCLINADA",
+  bad: "ALERTA",
+  unknown: "EVALUANDO",
+};
+const POSTURE_COLORS = {
+  good: "#34d399",
+  leaning: "#fbbf24",
+  bad: "#fb7185",
+  unknown: "#60a5fa",
+};
+const POSTURE_STATUS_STYLES = {
+  good: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  leaning: "border-amber-200 bg-amber-50 text-amber-900",
+  bad: "border-rose-200 bg-rose-50 text-rose-900",
+  unknown: "border-slate-200 bg-slate-50 text-slate-600",
+};
 const SKELETON_SEGMENTS = [
   ["left_shoulder", "right_shoulder"],
   ["left_hip", "right_hip"],
@@ -38,7 +62,7 @@ function torsoAngle(pose) {
   return Math.round(Math.atan2(Math.abs(shoulders.x - hips.x), vertical) * 180 / Math.PI);
 }
 
-function drawPoses(canvas, video, poses, selectedTrackId, warningTrackIds) {
+function drawPoses(canvas, video, poses, selectedTrackId, postureStatuses) {
   if (!canvas || !video.videoWidth || !video.videoHeight) return;
   if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
     canvas.width = video.videoWidth;
@@ -51,8 +75,8 @@ function drawPoses(canvas, video, poses, selectedTrackId, warningTrackIds) {
   context.lineWidth = Math.max(2, canvas.width / 240);
   for (const [index, pose] of poses.entries()) {
     const selected = pose.id === selectedTrackId;
-    const postureWarning = warningTrackIds.includes(pose.id);
-    const color = postureWarning ? "#fb7185" : selected ? "#34d399" : "#60a5fa";
+    const postureStatus = postureStatuses[index]?.status || "unknown";
+    const color = POSTURE_COLORS[postureStatus];
     const keypoints = new Map(pose.keypoints.map((point) => [point.name, point]));
     const visible = pose.keypoints.filter((point) => point.score >= KEYPOINT_THRESHOLD);
     if (!visible.length) continue;
@@ -91,7 +115,7 @@ function drawPoses(canvas, video, poses, selectedTrackId, warningTrackIds) {
     context.font = `600 ${Math.max(14, canvas.width / 32)}px sans-serif`;
     context.fillStyle = color;
     const label = Number.isFinite(pose.id) ? `Pista ${pose.id + 1}` : `Persona ${index + 1}`;
-    const caption = postureWarning ? `Mala postura · ${label}` : selected ? `Seguimiento · ${label}` : label;
+    const caption = `${selected ? "Seguida · " : ""}${label} · ${POSTURE_SHORT_LABELS[postureStatus]}`;
     context.fillText(caption, x + 5, Math.max(18, y - 8));
   }
 }
@@ -116,6 +140,7 @@ export default function Posture() {
   const [modelReady, setModelReady] = useState(false);
   const [alertActive, setAlertActive] = useState(false);
   const [alertTrackIds, setAlertTrackIds] = useState([]);
+  const [poseStatuses, setPoseStatuses] = useState([]);
   const [angle, setAngle] = useState(null);
   const [poseCount, setPoseCount] = useState(0);
   const [trackId, setTrackId] = useState(null);
@@ -163,6 +188,7 @@ export default function Posture() {
       setModelReady(false);
       setAlertActive(false);
       setAlertTrackIds([]);
+      setPoseStatuses([]);
       setAngle(null);
       setPoseCount(0);
       setTrackId(null);
@@ -275,6 +301,20 @@ export default function Posture() {
             },
             ALERT_DELAY_MS,
           );
+          const postureStatuses = poses.map((candidate, personIndex) => {
+            const candidateAngle = torsoAngle(candidate);
+            return {
+              trackId: Number.isFinite(candidate.id) ? candidate.id : null,
+              personIndex,
+              angle: candidateAngle,
+              status: classifyPosture(candidateAngle, warningTrackIds.includes(candidate.id), ALERT_ANGLE),
+            };
+          });
+          setPoseStatuses((current) => current.length === postureStatuses.length
+            && current.every((item, index) => item.trackId === postureStatuses[index].trackId
+              && item.personIndex === postureStatuses[index].personIndex
+              && item.angle === postureStatuses[index].angle
+              && item.status === postureStatuses[index].status) ? current : postureStatuses);
           setAlertTrackIds((current) => current.length === warningTrackIds.length
             && current.every((trackId, index) => trackId === warningTrackIds[index]) ? current : warningTrackIds);
           setAlertActive(warningTrackIds.length > 0);
@@ -308,7 +348,7 @@ export default function Posture() {
             setMovementDetected(false);
             setAngle(null);
           }
-          drawPoses(overlayRef.current, video, poses, tracked.trackId, warningTrackIds);
+          drawPoses(overlayRef.current, video, poses, tracked.trackId, postureStatuses);
         }
 
       } catch (analysisError) {
@@ -408,6 +448,30 @@ export default function Posture() {
                     : `Persona en seguimiento · pista ${trackId + 1}.`}
             </p>
           )}
+          {poseStatuses.length > 0 && (
+            <div className="mt-4">
+              <p className="text-sm font-semibold text-slate-700">Estado por persona</p>
+              <ul className="mt-2 grid gap-2 sm:grid-cols-2" aria-label="Estado de postura de cada persona detectada">
+                {poseStatuses.map((item) => {
+                  const personLabel = item.trackId === trackId
+                    ? `Seguimiento · Pista ${item.trackId + 1}`
+                    : Number.isFinite(item.trackId)
+                      ? `Pista ${item.trackId + 1}`
+                      : `Persona ${item.personIndex + 1}`;
+                  return (
+                    <li
+                      key={item.trackId ?? `person-${item.personIndex}`}
+                      className={`rounded-lg border px-3 py-2 text-sm ${POSTURE_STATUS_STYLES[item.status]}`}
+                    >
+                      <span className="font-semibold">{personLabel}: </span>
+                      {POSTURE_LABELS[item.status]}
+                      {item.angle !== null && <span className="ml-1">({item.angle}°)</span>}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
           {error && <p className="status error mt-4" role="alert">{error}</p>}
         </section>
 
@@ -441,6 +505,7 @@ export default function Posture() {
               <li>Si pierde de vista a la persona, no cambia a otra; pulsa “Reiniciar seguimiento” para seleccionarla de nuevo.</li>
               <li>Tras 1,6 segundos de inclinación sostenida de cualquier persona detectada, su esqueleto se resalta y suena un aviso.</li>
             </ol>
+            <p className="mt-3 text-xs text-slate-600">Verde: postura adecuada · Ámbar: inclinación en evaluación · Rojo: alarma sostenida · Azul: no hay datos suficientes.</p>
             <p className="mt-4 rounded-lg bg-emerald-50 p-3 text-xs leading-relaxed text-emerald-950">
               <CheckCircle2 className="mr-1 inline" size={15} />
               El seguimiento es visual y anónimo: no reconoce nombres ni guarda imágenes; el video se analiza en este dispositivo y no se envía al servidor. Es una ayuda educativa aproximada, no un diagnóstico ni sustituto de las pausas y recomendaciones de seguridad laboral.
