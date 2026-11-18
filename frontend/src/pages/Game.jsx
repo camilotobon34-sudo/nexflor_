@@ -1,118 +1,101 @@
-import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { useApi } from "../api.js";
-import { Status } from "../components/Shell.jsx";
+import React, { useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { Scissors, CheckCircle2, RotateCcw, ArrowLeft, Award } from 'lucide-react';
 
 export default function Game() {
   const { id } = useParams();
-  const { loading, error, data } = useApi(`/courses/${id}`);
+  const [tallosCortados, setTallosCortados] = useState(0);
+  const [juegoTerminado, setJuegoTerminado] = useState(false);
 
-  return (
-    <Status loading={loading} error={error}>
-      {data && <GameBody key={data.id} data={data} />}
-    </Status>
-  );
-}
+  const metaTallos = 10;
 
-function GameBody({ data }) {
-  const steps = data.game?.steps || [];
-  const ready = data.progress.percent === 100;
-  const bank = useMemo(() => shuffle(steps), [steps]);
-  const [placed, setPlaced] = useState([]);
-  const [mistakes, setMistakes] = useState(0);
-  const [message, setMessage] = useState(data.game?.intro || "");
-  const [shake, setShake] = useState("");
-
-  if (!data.game) {
-    return <p className="status">Este curso todavía no tiene juego.</p>;
-  }
-
-  if (!ready) {
-    return (
-      <section className="page">
-        <p className="eyebrow">{data.title}</p>
-        <h1>{data.game.title}</h1>
-        <p className="lede">El juego se abre al terminar las lecciones. Vas en {data.progress.done} de {data.progress.total}.</p>
-        <Link className="button" to={`/cursos/${data.id}`}>Volver a las lecciones</Link>
-      </section>
-    );
-  }
-
-  const done = placed.length === steps.length;
-  const next = steps[placed.length];
-
-  function pick(step) {
-    if (done) return;
-    if (step.id !== next.id) {
-      setMistakes((count) => count + 1);
-      setShake(step.id);
-      setMessage("Ese paso va más adelante. Mira qué ya quedó en la mesa.");
-      return;
+  const cortarTallo = () => {
+    if (tallosCortados < metaTallos) {
+      const nuevoTotal = tallosCortados + 1;
+      setTallosCortados(nuevoTotal);
+      if (nuevoTotal === metaTallos) {
+        setJuegoTerminado(true);
+      }
     }
-    setPlaced((current) => [...current, step.id]);
-    setShake("");
-    setMessage(step.why);
-  }
+  };
 
-  function again() {
-    setPlaced([]);
-    setMistakes(0);
-    setShake("");
-    setMessage(data.game.intro);
-  }
+  const reiniciarJuego = () => {
+    setTallosCortados(0);
+    setJuegoTerminado(false);
+  };
 
   return (
-    <section className="page">
-      <p className="eyebrow">{data.title}</p>
-      <h1>{data.game.title}</h1>
-      <p className="lede">{message}</p>
-      <div className="bench">
-        <ol className="slots">
-          {steps.map((step, index) => {
-            const filled = placed.includes(step.id);
-            return (
-              <li key={step.id} className={filled ? "filled" : index === placed.length ? "now" : ""}>
-                <span>{index + 1}</span>
-                {filled ? step.label : "Esperando el paso"}
-              </li>
-            );
-          })}
-        </ol>
-        {done ? (
-          <div className="card sand result-card">
-            <h2>Actividad lista</h2>
-            <p>
-              {mistakes === 0
-                ? "La hiciste en orden, sin equivocarte."
-                : `La terminaste con ${mistakes} ${mistakes === 1 ? "intento fuera de orden" : "intentos fuera de orden"}.`}
-            </p>
-            <button className="button" type="button" onClick={again}>Jugar otra vez</button>
-            <Link to={`/cursos/${data.id}`}>Volver al curso</Link>
-          </div>
+    <div className="max-w-2xl mx-auto p-6 text-white">
+      <Link to={`/cursos/${id}`} className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 text-xs font-semibold mb-6">
+        <ArrowLeft size={16} /> Volver al Curso
+      </Link>
+
+      <div className="bg-slate-800 border border-slate-700 rounded-2xl p-8 shadow-2xl text-center space-y-6">
+        
+        {!juegoTerminado ? (
+          <>
+            <div>
+              <span className="bg-emerald-600/30 text-emerald-300 text-xs font-semibold px-3 py-1 rounded-full border border-emerald-500/30">
+                Minijuego de Práctica - Módulo #{id}
+              </span>
+              <h1 className="text-2xl font-bold mt-3">Simulación de Corte Técnico</h1>
+              <p className="text-slate-400 text-xs mt-1">
+                Haz clic repetidamente en el botón para realizar el corte angular de los tallos en la línea de producción de Flores El Trigal.
+              </p>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-700 p-8 rounded-2xl my-6">
+              <div className="text-6xl font-black text-emerald-400 tracking-wider">
+                {tallosCortados} <span className="text-2xl text-slate-500">/ {metaTallos}</span>
+              </div>
+              <p className="text-xs text-slate-400 uppercase tracking-widest mt-2">Tallos Procesados Correctamente</p>
+            </div>
+
+            <button 
+              onClick={cortarTallo}
+              className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-4 rounded-2xl text-lg shadow-lg active:scale-95 transition flex items-center justify-center gap-2"
+            >
+              <Scissors size={24} /> ¡Cortar Tallo a 45°!
+            </button>
+          </>
         ) : (
-          <div className="choices">
-            {bank.filter((step) => !placed.includes(step.id)).map((step) => (
-              <button
-                key={step.id}
-                type="button"
-                className={shake === step.id ? "shake" : ""}
-                onClick={() => pick(step)}
+          <div className="space-y-6 animate-fadeIn">
+            <CheckCircle2 className="mx-auto text-emerald-400" size={64} />
+            <div>
+              <h2 className="text-2xl font-bold">¡Práctica Superada con Éxito!</h2>
+              <p className="text-emerald-200 text-xs mt-1">
+                Has demostrado excelente destreza y precisión técnica en las labores de campo.
+              </p>
+            </div>
+
+            {/* SILUETA DE EL TRIGAL */}
+            <div className="bg-gradient-to-b from-emerald-950 to-emerald-900 border border-emerald-600/40 p-8 rounded-2xl relative overflow-hidden shadow-inner">
+              <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px]"></div>
+              <Award className="mx-auto text-emerald-400 mb-2" size={32} />
+              <h3 className="text-emerald-300 font-bold tracking-widest uppercase text-xs mb-1">Certificación Oficial NEXFLOR</h3>
+              <div className="text-5xl my-2">🌾🏛️🌾</div>
+              <p className="text-white font-black text-xl tracking-wide mt-1">FLORES EL TRIGAL</p>
+              <p className="text-emerald-300 text-xs mt-1">Excelencia Agroindustrial • El Carmen de Viboral, Antioquia</p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <button 
+                onClick={reiniciarJuego}
+                className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 rounded-xl text-xs flex items-center justify-center gap-2 transition"
               >
-                {step.label}
+                <RotateCcw size={16} /> Jugar de Nuevo
               </button>
-            ))}
+              <Link 
+                to="/cursos"
+                className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 transition"
+              >
+                Ver más Cursos
+              </Link>
+            </div>
           </div>
         )}
-      </div>
-    </section>
-  );
-}
 
-function shuffle(list) {
-  const copy = [...list];
-  for (let index = copy.length - 1; index > 0; index -= 1) {
-    const swap = Math.floor(Math.random() * (index + 1));
-    [copy[index], copy[swap]] = [copy[swap], copy[index]];
-  }
-  return copy;
+      </div>
+    </div>
+  );
 }

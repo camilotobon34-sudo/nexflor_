@@ -1,252 +1,127 @@
-import { useEffect, useRef, useState } from "react";
-import { api } from "../api.js";
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { ShieldCheck, AlertTriangle, Users, Clock, ArrowLeft, Trash2, CheckCircle2 } from 'lucide-react';
 
-function adminApi(path, token, options = {}) {
-  return api(path, {
-    ...options,
-    headers: { Authorization: `Bearer ${token}`, ...(options.headers || {}) },
-  });
-}
-
-function when(time) {
-  if (!time) return "—";
-  return new Intl.DateTimeFormat("es-CO", {
-    timeZone: "America/Bogota",
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(time));
-}
-
-const labels = {
-  autorizado: "Autorizado",
-  pendiente: "Pendiente",
-  rechazado: "Rechazado",
-  suspendido: "Suspendido",
-  permitido: "Permitido",
-  denegado: "Denegado",
-};
-
-export default function FaceAdmin({ token }) {
-  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(new Date());
-  const [date, setDate] = useState(today);
-  const [query, setQuery] = useState("");
-  const [board, setBoard] = useState(null);
-  const [people, setPeople] = useState([]);
-  const [history, setHistory] = useState([]);
-  const [alerts, setAlerts] = useState([]);
-  const [audit, setAudit] = useState([]);
-  const [error, setError] = useState("");
-  const [pinNote, setPinNote] = useState("");
-  const [staff, setStaff] = useState([]);
-  const [account, setAccount] = useState({ username: "", name: "", password: "" });
-  const [updatedAt, setUpdatedAt] = useState(null);
-  const queryRef = useRef(query);
-  queryRef.current = query;
-
-  async function load(nextQuery = queryRef.current) {
-    try {
-      const [nextBoard, nextPeople, nextHistory, nextAlerts, nextAudit, nextStaff] = await Promise.all([
-        adminApi(`/admin/face/attendance?date=${date}`, token),
-        adminApi("/admin/face/people", token),
-        adminApi(`/admin/face/history?date=${date}&q=${encodeURIComponent(nextQuery)}`, token),
-        adminApi("/admin/face/alerts", token),
-        adminApi("/admin/face/audit", token),
-        adminApi("/admin/staff", token),
-      ]);
-      setBoard(nextBoard);
-      setPeople(nextPeople);
-      setHistory(nextHistory);
-      setAlerts(nextAlerts);
-      setAudit(nextAudit);
-      setStaff(nextStaff);
-      setUpdatedAt(Date.now());
-      setError("");
-    } catch (err) {
-      setError(err.message);
-    }
-  }
+export default function Admin() {
+  const [registros, setRegistros] = useState([]);
 
   useEffect(() => {
-    load(query);
-    const timer = setInterval(() => load(queryRef.current), 8000);
-    return () => clearInterval(timer);
-  }, [token, date]);
+    const guardados = JSON.parse(localStorage.getItem('nexflor_asistencia') || '[]');
+    setRegistros(guardados);
+  }, []);
 
-  async function act(path) {
-    setPinNote("");
-    try {
-      const body = await adminApi(path, token, { method: path.includes("/code") ? "POST" : path.startsWith("/admin/face/people/") && path.endsWith("/face") ? "DELETE" : "POST" });
-      if (body.pin) setPinNote(`Código de un solo vistazo: ${body.pin}. Entrégalo a la persona y no lo dejes escrito aquí.`);
-      await load();
-    } catch (err) {
-      setError(err.message);
+  const limpiarRegistros = () => {
+    if (window.confirm("¿Estás seguro de borrar todo el historial de asistencia de Flores El Trigal?")) {
+      localStorage.removeItem('nexflor_asistencia');
+      setRegistros([]);
     }
-  }
+  };
 
-  async function removePerson(id) {
-    try {
-      await adminApi(`/admin/face/people/${id}`, token, { method: "DELETE" });
-      await load();
-    } catch (err) {
-      setError(err.message);
-    }
-  }
-
-  async function saveStaff(event) {
-    event.preventDefault();
-    setError("");
-    try {
-      await adminApi("/admin/staff", token, { method: "POST", body: JSON.stringify(account) });
-      setAccount({ username: "", name: "", password: "" });
-      await load();
-    } catch (err) {
-      setError(err.message);
-    }
-  }
-
-  async function toggleStaff(person) {
-    try {
-      await adminApi(`/admin/staff/${person.id}/active`, token, {
-        method: "POST",
-        body: JSON.stringify({ active: !person.active }),
-      });
-      await load();
-    } catch (err) {
-      setError(err.message);
-    }
-  }
+  const totalAsistentes = registros.length;
+  const totalTardes = registros.filter(r => r.tarde).length;
+  const totalPuntuales = totalAsistentes - totalTardes;
 
   return (
-    <div className="face-admin">
-      {error && <p className="status error">{error}</p>}
-      {pinNote && <p className="face-result ok">{pinNote}</p>}
-      <p className="muted">Este reporte se actualiza solo cada pocos segundos{updatedAt ? ` · última lectura ${when(updatedAt)}` : ""}.</p>
-      <div className="stats">
-        <article className="card stat"><span>Entraron hoy</span><strong>{board?.counts.entered ?? "–"}</strong></article>
-        <article className="card stat"><span>No se han presentado</span><strong>{board?.counts.absent ?? "–"}</strong></article>
-        <article className="card stat"><span>Rechazados</span><strong>{board?.counts.denied ?? "–"}</strong></article>
-        <article className="card stat"><span>Pendientes</span><strong>{board?.counts.pending ?? "–"}</strong></article>
+    <div className="max-w-4xl mx-auto p-6 text-white">
+      <Link to="/" className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 text-xs font-semibold mb-6">
+        <ArrowLeft size={16} /> Volver al Inicio
+      </Link>
+
+      <div className="bg-slate-800 border border-slate-700 rounded-2xl p-8 shadow-2xl space-y-6">
+        
+        {/* Cabecera del Panel */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center pb-6 border-b border-slate-700 gap-4">
+          <div>
+            <span className="bg-emerald-600/30 text-emerald-300 text-xs font-semibold px-3 py-1 rounded-full border border-emerald-500/30">
+              Flores El Trigal - Administración
+            </span>
+            <h1 className="text-2xl font-bold mt-2 flex items-center gap-2">
+              <Users className="text-emerald-400" /> Panel de Control y Alertas
+            </h1>
+          </div>
+          {registros.length > 0 && (
+            <button 
+              onClick={limpiarRegistros}
+              className="bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/40 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition"
+            >
+              <Trash2 size={14} /> Limpiar Historial
+            </button>
+          )}
+        </div>
+
+        {/* Tarjetas de Resumen (Métricas) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-slate-900/60 border border-slate-700 p-5 rounded-xl flex items-center gap-4">
+            <div className="bg-blue-500/20 text-blue-400 p-3 rounded-xl">
+              <Users size={24} />
+            </div>
+            <div>
+              <p className="text-xs text-slate-400 uppercase tracking-wider">Total Registrados</p>
+              <h3 className="text-2xl font-black text-white">{totalAsistentes}</h3>
+            </div>
+          </div>
+
+          <div className="bg-slate-900/60 border border-slate-700 p-5 rounded-xl flex items-center gap-4">
+            <div className="bg-emerald-500/20 text-emerald-400 p-3 rounded-xl">
+              <CheckCircle2 size={24} />
+            </div>
+            <div>
+              <p className="text-xs text-slate-400 uppercase tracking-wider">Ingresos Puntuales</p>
+              <h3 className="text-2xl font-black text-emerald-400">{totalPuntuales}</h3>
+            </div>
+          </div>
+
+          <div className="bg-slate-900/60 border border-slate-700 p-5 rounded-xl flex items-center gap-4">
+            <div className="bg-red-500/20 text-red-400 p-3 rounded-xl">
+              <AlertTriangle size={24} />
+            </div>
+            <div>
+              <p className="text-xs text-slate-400 uppercase tracking-wider">Alertas de Retraso</p>
+              <h3 className="text-2xl font-black text-red-400">{totalTardes}</h3>
+            </div>
+          </div>
+        </div>
+
+        {/* Lista de Registros */}
+        <div className="space-y-4 pt-2">
+          <h3 className="text-sm font-bold text-slate-300 flex items-center gap-2">
+            <Clock size={16} className="text-emerald-400" /> Historial de Entradas (Turno Base: 6:00 a.m.)
+          </h3>
+
+          <div className="space-y-3">
+            {registros.length === 0 ? (
+              <div className="text-center py-12 bg-slate-900/40 rounded-xl border border-slate-700/60">
+                <p className="text-slate-500 text-xs">No hay registros de asistencia en este momento.</p>
+              </div>
+            ) : (
+              registros.map((reg, idx) => (
+                <div key={idx} className="bg-slate-900/60 p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between border border-slate-700 gap-4 text-xs">
+                  <div className="flex items-center gap-3">
+                    <img src={reg.foto} alt="Colaborador" className="w-12 h-12 rounded-full object-cover border-2 border-emerald-500" />
+                    <div>
+                      <h4 className="font-bold text-sm text-white">{reg.nombre}</h4>
+                      <p className="text-slate-400">{reg.cargo} • Cédula: {reg.cedula}</p>
+                      <p className="text-slate-300 mt-0.5">Hora de Check-in: <strong>{reg.hora}</strong></p>
+                    </div>
+                  </div>
+                  <div>
+                    {reg.tarde ? (
+                      <span className="bg-red-500/20 text-red-400 border border-red-500/40 px-3 py-1.5 rounded-full font-semibold flex items-center gap-1">
+                        <AlertTriangle size={14} /> Tarde (Alerta de Retraso)
+                      </span>
+                    ) : (
+                      <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-3 py-1.5 rounded-full font-semibold flex items-center gap-1">
+                        <ShieldCheck size={14} /> Puntual
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
       </div>
-
-      <section className="card">
-        <header><h2>Registro de entradas</h2></header>
-        <div className="toolbar">
-          <label>Fecha<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label>
-          <label>Persona<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nombre o identificación" /></label>
-          <button type="button" onClick={load}>Consultar</button>
-        </div>
-        <div className="split-lists">
-          <div>
-            <h3>Ingresaron</h3>
-            <ul>{board?.entered.map((person) => <li key={person.id}><strong>{person.fullName}</strong><span>{when(person.at)}</span></li>)}</ul>
-            {!board?.entered.length && <p className="muted">Nadie autorizado ha ingresado en esta fecha.</p>}
-          </div>
-          <div>
-            <h3>No han ingresado</h3>
-            <ul>{board?.absent.map((person) => <li key={person.id}><strong>{person.fullName}</strong><span>{person.documentId}</span></li>)}</ul>
-            {!board?.absent.length && <p className="muted">No hay ausencias entre las personas autorizadas.</p>}
-          </div>
-        </div>
-      </section>
-
-      <section className="card">
-        <h2>Alertas</h2>
-        <ul className="admin-list">
-          {alerts.filter((alert) => !alert.reviewed).map((alert) => (
-            <li key={alert.id}>
-              <div>
-                <strong>{alert.name}</strong>
-                <span>{when(alert.at)} · {alert.kind === "suplantacion" ? "Intento sospechoso" : "Varios intentos fallidos"} · {alert.attempts} intentos</span>
-              </div>
-              <button type="button" onClick={() => act(`/admin/face/alerts/${alert.id}/review`)}>Marcar revisada</button>
-            </li>
-          ))}
-        </ul>
-        {!alerts.some((alert) => !alert.reviewed) && <p className="muted">No hay alertas pendientes.</p>}
-      </section>
-
-      <section className="card">
-        <h2>Personas registradas</h2>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Nombre</th><th>Identificación</th><th>Cargo</th><th>Registro</th><th>Estado</th><th></th></tr>
-            </thead>
-            <tbody>
-              {people.map((person) => (
-                <tr key={person.id}>
-                  <td>{person.fullName}</td>
-                  <td>{person.documentId}</td>
-                  <td>{person.role || "—"}</td>
-                  <td>{when(person.createdAt)}</td>
-                  <td><span className={`pill ${person.status}`}>{labels[person.status] || person.status}</span></td>
-                  <td className="row-actions">
-                    {person.status !== "autorizado" && <button type="button" onClick={() => act(`/admin/face/people/${person.id}/approve`)}>Aprobar</button>}
-                    {person.status === "pendiente" && <button type="button" onClick={() => act(`/admin/face/people/${person.id}/reject`)}>Rechazar</button>}
-                    {person.status === "autorizado" && <button type="button" onClick={() => act(`/admin/face/people/${person.id}/suspend`)}>Suspender</button>}
-                    {person.status === "suspendido" && <button type="button" onClick={() => act(`/admin/face/people/${person.id}/reactivate`)}>Reactivar</button>}
-                    <button type="button" onClick={() => act(`/admin/face/people/${person.id}/code`)}>Código</button>
-                    <button type="button" onClick={() => act(`/admin/face/people/${person.id}/face`)}>Borrar rostro</button>
-                    <button type="button" onClick={() => removePerson(person.id)}>Eliminar</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {!people.length && <p className="muted">Todavía no hay personas registradas con rostro.</p>}
-      </section>
-
-      <section className="card">
-        <h2>Historial</h2>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Hora</th><th>Persona</th><th>Resultado</th><th>Acceso</th><th>Motivo</th><th>Intentos</th><th>Registró</th></tr>
-            </thead>
-            <tbody>
-              {history.map((event) => (
-                <tr key={event.id}>
-                  <td>{when(event.at)}</td>
-                  <td>{event.name}</td>
-                  <td>{labels[event.result] || event.result}</td>
-                  <td><span className={`pill ${event.access}`}>{labels[event.access] || event.access}</span></td>
-                  <td>{event.reason || "—"}</td>
-                  <td>{event.attempts || 0}</td>
-                  <td>{event.by || "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="card">
-        <h2>Personal que escanea</h2>
-        <p className="muted">Estas cuentas entran a Reconocimiento facial. No ven reportes ni pueden aprobar a nadie.</p>
-        <ul className="admin-list">
-          {staff.map((person) => (
-            <li key={person.id}>
-              <div>
-                <strong>{person.name}</strong>
-                <span>{person.username} · {person.active ? "Activa" : "Suspendida"}</span>
-              </div>
-              <button type="button" onClick={() => toggleStaff(person)}>{person.active ? "Suspender" : "Reactivar"}</button>
-            </li>
-          ))}
-        </ul>
-        <form className="face-form" onSubmit={saveStaff}>
-          <label>Nombre<input value={account.name} onChange={(event) => setAccount({ ...account, name: event.target.value })} minLength={3} required /></label>
-          <label>Usuario<input value={account.username} onChange={(event) => setAccount({ ...account, username: event.target.value })} autoComplete="off" minLength={3} required /></label>
-          <label>Contraseña<input type="password" value={account.password} onChange={(event) => setAccount({ ...account, password: event.target.value })} autoComplete="new-password" minLength={12} required /></label>
-          <button className="button" type="submit">Crear cuenta de escaneo</button>
-        </form>
-      </section>
-
-      <section className="card">
-        <h2>Acciones del administrador</h2>
-        <ul>{audit.slice(0, 8).map((entry) => <li key={entry.id}>{when(entry.at)} · {entry.detail}</li>)}</ul>
-      </section>
     </div>
   );
 }
