@@ -1,3 +1,4 @@
+import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { workerToken } from "./api.js";
 import Shell from "./components/Shell.jsx";
@@ -23,25 +24,25 @@ function Guard() {
 export default function App() {
   return (
     <>
-    <AdminShortcut />
-    <Routes>
-      <Route path="entrar" element={<Enter />} />
-      <Route path="id" element={<Face />} />
-      <Route path="ingreso" element={<Face />} />
-      <Route path="admin" element={<Admin />} />
-      <Route element={<Guard />}>
-        <Route index element={<Home />} />
-        <Route path="cursos" element={<Courses />} />
-        <Route path="cursos/:id" element={<Course />} />
-        <Route path="cursos/:id/taller" element={<Workshop />} />
-        <Route path="cursos/:id/juego" element={<Game />} />
-        <Route path="practica/:id" element={<Practice />} />
-        <Route path="equipo" element={<Team />} />
-        <Route path="progreso" element={<Progress />} />
-        <Route path="posture" element={<Posture />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Route>
-    </Routes>
+      <AdminShortcut />
+      <Routes>
+        <Route path="entrar" element={<Enter />} />
+        <Route path="id" element={<Face />} />
+        <Route path="ingreso" element={<Face />} />
+        <Route path="admin" element={<Admin />} />
+        <Route element={<Guard />}>
+          <Route index element={<Home />} />
+          <Route path="cursos" element={<Courses />} />
+          <Route path="cursos/:id" element={<Course />} />
+          <Route path="cursos/:id/taller" element={<Workshop />} />
+          <Route path="cursos/:id/juego" element={<Game />} />
+          <Route path="practica/:id" element={<Practice />} />
+          <Route path="equipo" element={<Team />} />
+          <Route path="progreso" element={<Progress />} />
+          <Route path="posture" element={<Posture />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
     </>
   );
 }
