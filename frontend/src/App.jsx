@@ -1,5 +1,5 @@
-import React from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { workerToken } from "./api.js";
 import Shell from "./components/Shell.jsx";
 import Home from "./pages/Home.jsx";
@@ -17,8 +17,18 @@ import Face from "./pages/Face.jsx";
 import AdminShortcut from "./components/AdminShortcut.jsx";
 
 function Guard() {
-  if (!workerToken()) return <Navigate to="/entrar" replace />;
-  return <Shell />;
+  const [hasSession, setHasSession] = useState(() => Boolean(workerToken()));
+
+  useEffect(() => {
+    function onSessionExpired() {
+      setHasSession(Boolean(workerToken()));
+    }
+    window.addEventListener("nexflor:session-expired", onSessionExpired);
+    return () => window.removeEventListener("nexflor:session-expired", onSessionExpired);
+  }, []);
+
+  if (!hasSession) return <Navigate to="/entrar" replace />;
+  return <Outlet />;
 }
 
 export default function App() {
@@ -26,22 +36,24 @@ export default function App() {
     <>
       <AdminShortcut />
       <Routes>
-        <Route path="entrar" element={<Enter />} />
-        <Route path="id" element={<Face />} />
-        <Route path="ingreso" element={<Face />} />
-        <Route path="admin" element={<Admin />} />
+        <Route path="/entrar" element={<Enter />} />
+        <Route path="/ingreso" element={<Face />} />
+        <Route path="/id" element={<Face />} />
+        <Route path="/admin" element={<Admin />} />
         <Route element={<Guard />}>
-          <Route index element={<Home />} />
-          <Route path="cursos" element={<Courses />} />
-          <Route path="cursos/:id" element={<Course />} />
-          <Route path="cursos/:id/taller" element={<Workshop />} />
-          <Route path="cursos/:id/juego" element={<Game />} />
-          <Route path="practica/:id" element={<Practice />} />
-          <Route path="equipo" element={<Team />} />
-          <Route path="progreso" element={<Progress />} />
-          <Route path="posture" element={<Posture />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route element={<Shell />}>
+            <Route index element={<Home />} />
+            <Route path="cursos" element={<Courses />} />
+            <Route path="cursos/:id" element={<Course />} />
+            <Route path="cursos/:id/taller" element={<Workshop />} />
+            <Route path="cursos/:id/juego" element={<Game />} />
+            <Route path="practica/:id" element={<Practice />} />
+            <Route path="equipo" element={<Team />} />
+            <Route path="progreso" element={<Progress />} />
+            <Route path="posture" element={<Posture />} />
+          </Route>
         </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );

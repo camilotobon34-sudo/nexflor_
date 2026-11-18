@@ -1,142 +1,198 @@
-import React, { useState } from "react";
-import { loginWorker } from "../api.js";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { api, loginWorker, logoutWorker, registerWorker } from "../api.js";
+import { saveSession } from "../session.js";
+
+const tabs = [
+  { id: "entrar", label: "Entrar" },
+  { id: "crear", label: "Crear cuenta" },
+  { id: "admin", label: "Administrador" },
+];
+
+const descriptions = {
+  entrar: "Entra con la cuenta que ya creaste. Si todavía no tienes, créala primero.",
+  crear: "Crea tu cuenta con tu nombre y una contraseña. Después podrás entrar al taller.",
+  admin: "Entra con tu nombre de administrador.",
+};
 
 export default function Enter() {
-  const [nombre, setNombre] = useState("");
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("entrar");
+  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
-  const [activeTab, setActiveTab] = useState("entrar"); // 'entrar', 'crear', 'admin'
-  const [error, setError] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [shift, setShift] = useState("Mañana");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const handleLogin = (e) => {
-    e.preventDefault();
-    const success = loginWorker(nombre, password);
-    if (success) {
-      window.location.href = "/";
-    } else {
-      setError(true);
+  function changeTab(tab) {
+    setActiveTab(tab);
+    setError("");
+    setPassword("");
+    setConfirmPassword("");
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    setError("");
+
+    if (activeTab === "crear" && password !== confirmPassword) {
+      setError("Las contraseñas no coinciden.");
+      return;
     }
-  };
+
+    setBusy(true);
+    try {
+      if (activeTab === "admin") {
+        const session = await api("/admin/login", {
+          method: "POST",
+          body: JSON.stringify({ username: name, password }),
+        });
+        logoutWorker();
+        saveSession(session);
+        navigate("/admin", { replace: true });
+      } else {
+        if (activeTab === "crear") {
+          await registerWorker(name, password, shift);
+        } else {
+          await loginWorker(name, password);
+        }
+        navigate("/", { replace: true });
+      }
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-[#fcfbf9] flex flex-col items-center justify-center p-4">
-      <div className="bg-white w-full max-w-lg rounded-2xl shadow-lg border border-slate-100 p-8 sm:p-12 flex flex-col items-center">
-        
-        {/* LOGO FLORES EL TRIGAL */}
-        <div className="bg-[#112244] w-48 py-3 px-4 rounded-xl flex flex-col items-center justify-center shadow-md mb-8">
-          <div className="flex items-center space-x-1 mb-1">
-            {/* Icono de trigo estilizado */}
-            <svg className="w-5 h-5 text-[#facc15]" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.78L11 15.5v1.5c0 .55.45 1 1 1v1.93zm6-6.93c0 2.21-.9 4.21-2.35 5.65-.35-.77-1.12-1.35-2.03-1.45V15c0-.55-.45-1-1-1h-2v-2h1c.55 0 1-.45 1-1V9h2c.55 0 1-.45 1-1V6.35c2.18 1.15 3.35 3.39 3.35 4.65z"/>
-            </svg>
-          </div>
-          <span className="text-white text-[10px] tracking-[0.25em] uppercase font-serif">Flores</span>
-          <span className="text-[#facc15] text-sm tracking-[0.2em] uppercase font-serif font-bold">El Trigal</span>
+    <main className="flex min-h-screen items-center justify-center bg-[#fcfbf9] px-4 py-10">
+      <section className="w-full max-w-lg rounded-2xl border border-slate-100 bg-white p-7 shadow-lg sm:p-10">
+        <div className="mb-7 flex justify-center">
+          <img
+            src="/logo-trigal.png"
+            alt="Flores El Trigal"
+            className="w-full max-w-[360px] rounded-lg"
+          />
         </div>
 
-        {/* TÍTULO Y DESCRIPCIÓN */}
-        <h1 className="text-2xl sm:text-3xl font-serif font-bold text-slate-900 mb-2 text-center">
-          Entrar al taller
+        <h1 className="text-center font-fraunces text-3xl font-semibold text-slate-900">
+          {activeTab === "crear" ? "Crear cuenta" : "Entrar al taller"}
         </h1>
-        <p className="text-slate-600 text-sm text-center mb-8 max-w-sm">
-          Entra con la cuenta que ya creaste. Si todavía no tienes, créala primero.
+        <p className="mx-auto mb-7 mt-2 max-w-sm text-center text-sm leading-6 text-slate-600">
+          {descriptions[activeTab]}
         </p>
 
-        {/* PESTAÑAS DE NAVEGACIÓN */}
-        <div className="flex bg-slate-50 p-1.5 rounded-full border border-slate-200 mb-8 w-full max-w-xs justify-between">
-          <button
-            type="button"
-            onClick={() => setActiveTab("entrar")}
-            className={`flex-1 py-2 text-xs font-medium rounded-full transition-all ${
-              activeTab === "entrar"
-                ? "bg-[#112244] text-white shadow-sm"
-                : "text-slate-700 hover:text-slate-900"
-            }`}
-          >
-            Entrar
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab("crear");
-              window.location.href = "/ingreso"; // Ajusta si tienes ruta de registro
-            }}
-            className={`flex-1 py-2 text-xs font-medium rounded-full transition-all ${
-              activeTab === "crear"
-                ? "bg-[#112244] text-white shadow-sm"
-                : "text-slate-700 hover:text-slate-900"
-            }`}
-          >
-            Crear cuenta
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab("admin");
-              window.location.href = "/admin";
-            }}
-            className={`flex-1 py-2 text-xs font-medium rounded-full transition-all ${
-              activeTab === "admin"
-                ? "bg-[#112244] text-white shadow-sm"
-                : "text-slate-700 hover:text-slate-900"
-            }`}
-          >
-            Administrador
-          </button>
+        <div
+          aria-label="Tipo de acceso"
+          className="mb-7 grid grid-cols-3 rounded-full border border-slate-200 bg-slate-50 p-1"
+          role="tablist"
+        >
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              onClick={() => changeTab(tab.id)}
+              className={`rounded-full px-2 py-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#112244] sm:text-sm ${
+                activeTab === tab.id
+                  ? "bg-[#112244] text-white shadow-sm"
+                  : "text-slate-600 hover:text-[#112244]"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        {/* FORMULARIO */}
-        <form onSubmit={handleLogin} className="w-full max-w-sm space-y-5">
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-1.5">
-              Nombre
-            </label>
+        <form className="mx-auto max-w-sm space-y-4" onSubmit={submit}>
+          <label className="block text-sm font-medium text-slate-800">
+            {activeTab === "admin" ? "Nombre de administrador" : "Nombre / Correo"}
             <input
               type="text"
+              name="name"
               required
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              placeholder="Tu nombre o correo"
-              className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#112244] focus:border-transparent transition-all shadow-sm"
+              autoComplete="username"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder={activeTab === "admin" ? "Tu nombre" : "Tu nombre completo"}
+              className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#112244] focus:ring-2 focus:ring-[#112244]/15"
             />
-          </div>
+          </label>
 
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-800 mb-1.5">
-              Contraseña
-            </label>
+          <label className="block text-sm font-medium text-slate-800">
+            Contraseña
             <input
               type="password"
+              name="password"
               required
+              autoComplete={activeTab === "crear" ? "new-password" : "current-password"}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#112244] focus:border-transparent transition-all shadow-sm"
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Tu contraseña"
+              className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#112244] focus:ring-2 focus:ring-[#112244]/15"
             />
-          </div>
+          </label>
+
+          {activeTab === "crear" && (
+            <>
+              <label className="block text-sm font-medium text-slate-800">
+                Confirmar contraseña
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  required
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  placeholder="Repite tu contraseña"
+                  className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#112244] focus:ring-2 focus:ring-[#112244]/15"
+                />
+              </label>
+
+              <label className="block text-sm font-medium text-slate-800">
+                Turno
+                <select
+                  name="shift"
+                  value={shift}
+                  onChange={(event) => setShift(event.target.value)}
+                  className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#112244] focus:ring-2 focus:ring-[#112244]/15"
+                >
+                  <option>Mañana</option>
+                  <option>Tarde</option>
+                </select>
+              </label>
+            </>
+          )}
 
           {error && (
-            <p className="text-red-600 text-xs text-center">Por favor verifica tus datos de acceso.</p>
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+              {error}
+            </p>
           )}
 
           <button
             type="submit"
-            className="w-full py-3 px-4 bg-[#112244] hover:bg-[#1a3366] text-white text-sm font-medium rounded-xl shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#112244] mt-2"
+            disabled={busy}
+            className="w-full rounded-xl bg-[#112244] px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[#1a3366] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#112244] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70"
           >
-            Entrar
+            {busy
+              ? activeTab === "crear" ? "Creando cuenta…" : "Entrando…"
+              : activeTab === "crear" ? "Crear cuenta" : "Entrar"}
           </button>
         </form>
 
-        {/* ENLACES INFERIORES */}
-        <div className="mt-8 flex flex-col items-center space-y-2 text-xs">
-          <a href="/admin" className="text-[#112244] hover:underline font-medium">
+        <nav aria-label="Accesos adicionales" className="mt-7 flex flex-col items-center gap-2 text-sm">
+          <Link className="font-medium text-[#112244] hover:underline" to="/admin">
             Solo el panel de administración
-          </a>
-          <a href="/id" className="text-[#112244] hover:underline font-medium">
+          </Link>
+          <Link className="font-medium text-[#112244] hover:underline" to="/ingreso">
             Reconocimiento facial para personal autorizado
-          </a>
-        </div>
-
-      </div>
-    </div>
+          </Link>
+        </nav>
+      </section>
+    </main>
   );
 }

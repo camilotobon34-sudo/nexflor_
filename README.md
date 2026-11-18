@@ -37,6 +37,14 @@ La sección está en el menú **Nexflor Posture** y analiza la postura en el nav
 
 El desarrollo local conserva `backend/data/db.json`. En Vercel, configura una base MySQL administrada antes de desplegar; Railway es una opción sencilla. Si Vercel se conecta desde fuera de Railway, usa la URL de conexión pública/TCP, no el hostname privado de Railway.
 
+### Despliegue del proyecto completo en Vercel
+
+Importa el repositorio y deja **Root Directory** en la raíz del repositorio (no en `frontend/`), para que Vercel incluya la función `api/[...path].js` junto con la aplicación. La configuración raíz `vercel.json` instala las dependencias de `frontend/` y `backend/`, construye Vite y publica `frontend/dist`; también redirige las rutas de React Router a `index.html`. No agregues otro servicio a `vercel.json`.
+
+Configura en el proyecto de Vercel las variables de backend descritas abajo. Como la función y el frontend comparten dominio, `VITE_API_URL` puede quedar sin configurar. Si alojas el backend en otro dominio, establece `VITE_API_URL` al origen HTTPS del backend (sin `/api` al final) y habilita ese origen en CORS.
+
+Para comprobar el mismo build localmente, ejecuta `npm ci --prefix frontend` y `npm run build --prefix frontend`. El directorio que debe existir al terminar es `frontend/dist`.
+
 Guarda en el entorno de producción del backend estos secretos, nunca en el repositorio:
 
 - `MYSQL_URL`: URL MySQL pública de Railway, por ejemplo `mysql://usuario:contraseña@host:puerto/base`.

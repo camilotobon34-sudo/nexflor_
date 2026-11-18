@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { useApi, WORKER_KEY } from "../api.js";
+import { logoutWorker, useApi } from "../api.js";
 
 const links = [
   { to: "/", label: "Inicio", end: true, icon: HomeIcon },
@@ -16,7 +16,7 @@ export default function Shell() {
   const navigate = useNavigate();
 
   function leave() {
-    sessionStorage.removeItem(WORKER_KEY);
+    logoutWorker();
     navigate("/entrar");
   }
   const formatted = new Intl.DateTimeFormat("es-CO", {
