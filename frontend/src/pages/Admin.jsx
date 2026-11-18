@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api.js";
 import { clearSession, readSession, saveSession, TOKEN_KEY } from "../session.js";
 import FaceAdmin from "./FaceAdmin.jsx";
+import StageProgress from "../components/StageProgress.jsx";
 
 export { TOKEN_KEY };
 
@@ -316,12 +317,22 @@ function TeamTab({ token, people, reload }) {
 function PersonRow({ token, person, reload }) {
   const [progress, setProgress] = useState(person.progress);
   useEffect(() => setProgress(person.progress), [person.progress]);
+  const courseProgress = person.courses || [];
+  const completedLessons = courseProgress.reduce((sum, course) => sum + course.done, 0);
+  const totalLessons = courseProgress.reduce((sum, course) => sum + course.total, 0);
 
   return (
     <li className="lesson-row">
       <div>
         <strong>{person.name}</strong>
         <small>{person.role} · {person.shift} · ID: {person.accountId || person.id}</small>
+        {person.accountId && (
+          <StageProgress
+            compact
+            completedLessons={completedLessons}
+            totalLessons={totalLessons}
+          />
+        )}
         {person.courses?.length > 0 && (
           <details className="mt-2">
             <summary className="cursor-pointer">Auditar avance por curso</summary>

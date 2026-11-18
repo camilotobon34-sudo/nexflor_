@@ -2,9 +2,12 @@ import { ArrowRight, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useApi } from "../api.js";
 import { Status } from "../components/Shell.jsx";
+import StageProgress from "../components/StageProgress.jsx";
 
 export default function CourseCatalog() {
   const { loading, error, data } = useApi("/courses");
+  const totalLessons = (data || []).reduce((sum, course) => sum + course.progress.total, 0);
+  const completedLessons = (data || []).reduce((sum, course) => sum + course.progress.done, 0);
 
   return (
     <Status loading={loading} error={error}>
@@ -12,6 +15,9 @@ export default function CourseCatalog() {
         <p className="eyebrow">Flores El Trigal · Aprendizaje</p>
         <h1>Recorridos del taller</h1>
         <p className="lede">Continúa tus cursos. Tu avance se guarda en tu cuenta y también queda disponible para el panel administrativo.</p>
+        {data?.length > 0 && (
+          <StageProgress completedLessons={completedLessons} totalLessons={totalLessons} />
+        )}
 
         {data?.length ? (
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
