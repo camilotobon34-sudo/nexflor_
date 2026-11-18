@@ -1,17 +1,16 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { loginWorker } from "../api.js";
 
 export default function Enter() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
-  const navigate = useNavigate();
 
   const handleLogin = (e) => {
     e.preventDefault();
     const success = loginWorker(email, password);
     if (success) {
+      // Forzamos la recarga directa a la raiz para entrar sin bloqueos
       window.location.href = "/";
     } else {
       setError(true);
@@ -65,7 +64,7 @@ export default function Enter() {
             </div>
 
             {error && (
-              <p className="text-red-600 text-xs">Por favor introduce tus credenciales de acceso.</p>
+              <p className="text-red-600 text-xs">Por favor introduce tus credenciales.</p>
             )}
 
             <div>
