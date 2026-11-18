@@ -89,7 +89,7 @@ async function getMysqlPool() {
         return createPool({
           ...parseMysqlUrl(process.env.MYSQL_URL),
           waitForConnections: true,
-          connectionLimit: Math.max(1, Number(process.env.MYSQL_CONNECTION_LIMIT) || 3),
+          connectionLimit: Math.max(1, Number(process.env.MYSQL_CONNECTION_LIMIT) || 1),
           maxIdle: 2,
           idleTimeout: 60000,
           enableKeepAlive: true,
