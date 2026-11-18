@@ -44,13 +44,13 @@ export default function Shell() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 md:flex">
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-200 bg-white px-4 py-6 md:flex">
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-slate-200 bg-white px-4 py-6 shadow-sm md:flex">
         <div className="mb-8 rounded-xl bg-[#112244] p-3">
           <img className="w-full rounded-lg" src="/logo-trigal.png" alt="Flores El Trigal" />
         </div>
-        <nav aria-label="Navegación principal" className="flex-1 space-y-6">
+        <nav aria-label="Navegación principal" className="min-h-0 flex-1 space-y-6 overflow-y-auto">
           {groups.map((group) => (
-            <section key={group.label}>
+            <section className="nav-group" key={group.label}>
               <h2 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">{group.label}</h2>
               <div className="space-y-1">
                 {group.links.map((link) => (
@@ -95,14 +95,14 @@ export default function Shell() {
           <Outlet />
         </main>
       </div>
-      <nav aria-label="Navegación móvil" className="fixed inset-x-0 bottom-0 z-30 flex gap-1 overflow-x-auto border-t border-slate-200 bg-white px-2 py-2 md:hidden">
+      <nav aria-label="Navegación móvil" className="mobile-nav">
         {links.map((link) => (
           <NavLink
             key={link.to}
             to={link.to}
             end={link.end}
-            className={({ isActive }) => `flex min-w-[72px] flex-1 flex-col items-center gap-1 rounded-lg px-1 py-1.5 text-center text-[10px] ${
-              isActive ? "text-[#112244]" : "text-slate-500"
+            className={({ isActive }) => `flex min-w-0 flex-col items-center gap-1 rounded-lg px-0.5 py-1.5 text-center text-[9px] font-medium leading-tight ${
+              isActive ? "bg-emerald-50 text-[#112244]" : "text-slate-500 hover:bg-slate-50"
             }`}
           >
             <link.icon />

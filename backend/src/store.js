@@ -487,6 +487,10 @@ export function dashboard(workerId) {
       { label: "Cursos abiertos", value: String(openCourses), hint: "empezados y sin cerrar" },
       { label: "Prácticas por hacer", value: String(pendingQuiz), hint: "aún sin intento" },
     ],
+    progress: {
+      completedLessons: lessonsDone,
+      totalLessons: lessonsTotal,
+    },
     tasks,
     tracks: courses.slice(0, 3).map((item) => ({
       id: item.course.id,

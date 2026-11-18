@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useApi } from "../api.js";
 import { Status } from "../components/Shell.jsx";
+import StageProgress from "../components/StageProgress.jsx";
 
 const clips = [
   {
@@ -29,6 +30,27 @@ const clips = [
   },
 ];
 
+const moments = [
+  {
+    image: "/flores/equipo-invernadero-2026.jpg",
+    alt: "Compañeros recorriendo juntos el cultivo de flores",
+    title: "Un cultivo hecho en equipo",
+    text: "Cada jornada se construye entre todos.",
+  },
+  {
+    image: "/flores/siembra-invernadero-2026.jpg",
+    alt: "Personas trabajando entre las camas del invernadero",
+    title: "Cuidado desde la cama",
+    text: "Atención a cada etapa del crecimiento.",
+  },
+  {
+    image: "/flores/equipo-trigal-2026.jpg",
+    alt: "Equipo de Flores El Trigal en medio del cultivo",
+    title: "Orgullo El Trigal",
+    text: "El trabajo diario se convierte en flores.",
+  },
+];
+
 export default function Home() {
   const { loading, error, data } = useApi("/dashboard");
 
@@ -50,24 +72,6 @@ export default function Home() {
             <img src={data.banner.image} alt="Arreglo floral del curso en curso" />
           </article>
 
-          <section className="videos">
-            <p className="eyebrow">En el cultivo</p>
-            <h2>Videos de El Trigal</h2>
-            <div className="video-grid">
-              {clips.map((clip) => (
-                <figure key={clip.src}>
-                  <video controls playsInline preload="metadata" poster={clip.poster}>
-                    <source src={clip.src} type="video/mp4" />
-                  </video>
-                  <figcaption>
-                    <strong>{clip.title}</strong>
-                    <small>{clip.text}</small>
-                  </figcaption>
-                </figure>
-              ))}
-            </div>
-          </section>
-
           <div className="stats">
             {data.stats.map((stat) => (
               <article key={stat.label}>
@@ -77,6 +81,11 @@ export default function Home() {
               </article>
             ))}
           </div>
+
+          <StageProgress
+            completedLessons={data.progress.completedLessons}
+            totalLessons={data.progress.totalLessons}
+          />
 
           <div className="split">
             <section className="card">
@@ -113,6 +122,48 @@ export default function Home() {
               </ul>
             </section>
           </div>
+
+          <section className="moments" aria-labelledby="moments-title">
+            <header className="section-heading">
+              <div>
+                <p className="eyebrow">Desde nuestros invernaderos</p>
+                <h2 id="moments-title">Así se vive el cultivo</h2>
+                <p>Personas, cuidado y flores en cada jornada de El Trigal.</p>
+              </div>
+              <Link to="/cursos">Explorar los cursos</Link>
+            </header>
+            <div className="moment-grid">
+              {moments.map((moment) => (
+                <figure className="moment-card" key={moment.image}>
+                  <img src={moment.image} alt={moment.alt} loading="lazy" />
+                  <figcaption>
+                    <span>Flores El Trigal</span>
+                    <strong>{moment.title}</strong>
+                    <small>{moment.text}</small>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </section>
+
+          <section className="videos">
+            <p className="eyebrow">En el cultivo</p>
+            <h2>Videos de El Trigal</h2>
+            <div className="video-grid">
+              {clips.map((clip) => (
+                <figure key={clip.src}>
+                  <video controls playsInline preload="metadata" poster={clip.poster}>
+                    <source src={clip.src} type="video/mp4" />
+                  </video>
+                  <figcaption>
+                    <strong>{clip.title}</strong>
+                    <small>{clip.text}</small>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </section>
+
         </section>
       )}
     </Status>
