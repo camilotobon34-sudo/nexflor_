@@ -19,3 +19,196 @@ input,
 select {
   font: inherit;
 }
+
+@layer components {
+  .page {
+    @apply mx-auto max-w-7xl space-y-5 py-5;
+  }
+
+  .page h1,
+  .admin h1 {
+    @apply text-3xl font-semibold tracking-tight text-slate-950;
+  }
+
+  .page h2,
+  .page h3 {
+    @apply font-semibold tracking-tight text-slate-900;
+  }
+
+  .page-head {
+    @apply flex flex-wrap items-end justify-between gap-4;
+  }
+
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.16em] text-emerald-800;
+  }
+
+  .lede {
+    @apply mt-2 max-w-3xl text-sm leading-6 text-slate-600;
+  }
+
+  .card {
+    @apply rounded-2xl border border-slate-200 bg-white p-5 shadow-sm;
+  }
+
+  .stack {
+    @apply space-y-4;
+  }
+
+  .button {
+    @apply inline-flex items-center justify-center rounded-xl bg-[#112244] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1c3561] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-200 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .button.ghost {
+    @apply border border-slate-300 bg-white text-slate-700 shadow-none hover:bg-slate-50;
+  }
+
+  .danger {
+    @apply inline-flex items-center justify-center rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .status {
+    @apply rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700;
+  }
+
+  .status.error {
+    @apply border-red-200 bg-red-50 text-red-800;
+  }
+
+  .split,
+  .admin-grid {
+    @apply grid gap-5 lg:grid-cols-2;
+  }
+
+  .course-progress {
+    @apply flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600;
+  }
+
+  .meter {
+    @apply h-2 overflow-hidden rounded-full bg-slate-100;
+  }
+
+  .meter > i {
+    @apply block h-full rounded-full bg-emerald-600 transition-all;
+  }
+
+  .lesson-layout {
+    @apply grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(16rem,0.8fr)];
+  }
+
+  .player {
+    @apply relative overflow-hidden rounded-2xl bg-slate-950 text-white;
+  }
+
+  .player > img {
+    @apply h-64 w-full object-cover;
+  }
+
+  .player > button {
+    @apply absolute right-3 top-3 rounded-lg bg-white/95 px-3 py-2 text-sm font-semibold text-slate-900 shadow;
+  }
+
+  .player-bar {
+    @apply flex flex-wrap items-center gap-3 p-4 text-sm;
+  }
+
+  .player-bar small {
+    @apply ml-auto text-slate-300;
+  }
+
+  .teach-steps {
+    @apply list-decimal space-y-2 pl-5 text-sm leading-6 text-slate-700;
+  }
+
+  .pager {
+    @apply flex items-center justify-between gap-3 py-4 text-sm text-slate-600;
+  }
+
+  .pager button {
+    @apply rounded-lg border border-slate-200 bg-white px-3 py-2 font-medium hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .sand {
+    @apply border-amber-200 bg-amber-50;
+  }
+
+  .note-card {
+    @apply bg-slate-50;
+  }
+
+  .toast {
+    @apply rounded-xl bg-emerald-50 p-3 text-sm font-medium text-emerald-900;
+  }
+
+  .admin {
+    @apply mx-auto max-w-7xl space-y-5 px-4 py-7 sm:px-6;
+  }
+
+  .login {
+    @apply grid min-h-screen place-items-center bg-slate-50 px-4 py-10;
+  }
+
+  .login > .card {
+    @apply w-full max-w-md space-y-5;
+  }
+
+  .admin > header {
+    @apply flex flex-wrap items-center justify-between gap-4;
+  }
+
+  .admin-actions {
+    @apply flex items-center gap-4 text-sm font-semibold text-[#112244];
+  }
+
+  .chips {
+    @apply flex flex-wrap gap-2 border-b border-slate-200 pb-3;
+  }
+
+  .chips button {
+    @apply rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50;
+  }
+
+  .chips button.on {
+    @apply border-[#112244] bg-[#112244] text-white;
+  }
+
+  .admin-list {
+    @apply space-y-2;
+  }
+
+  .admin-list button {
+    @apply flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left transition hover:border-emerald-300 hover:bg-emerald-50/40;
+  }
+
+  .admin-list button.on {
+    @apply border-emerald-600 bg-emerald-50;
+  }
+
+  .admin-list small {
+    @apply shrink-0 text-xs text-slate-500;
+  }
+
+  .table-wrap {
+    @apply overflow-x-auto;
+  }
+
+  .table-wrap table {
+    @apply w-full min-w-[38rem] border-collapse text-left text-sm;
+  }
+
+  .table-wrap th {
+    @apply border-b border-slate-200 px-3 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500;
+  }
+
+  .table-wrap td {
+    @apply border-b border-slate-100 px-3 py-3 text-slate-700;
+  }
+
+  .profile {
+    @apply h-fit;
+  }
+
+  .face-actions {
+    @apply mt-5 flex flex-wrap items-center gap-3;
+  }
+}

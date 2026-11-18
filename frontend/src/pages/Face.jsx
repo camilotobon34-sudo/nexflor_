@@ -286,28 +286,40 @@ export default function Face() {
 
   if (!authorized) {
     return (
-      <main className="login">
-        <form className="card stack" onSubmit={login}>
-          <p className="eyebrow">NEXFLOR ID · Acceso autorizado</p>
-          <h1>Ingreso de personal</h1>
-          <p className="lede">Inicia sesión con la cuenta de escaneo creada por un administrador.</p>
-          <label>Usuario<input autoComplete="username" value={username} onChange={(event) => setUsername(event.target.value)} required /></label>
-          <label>Contraseña<input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required /></label>
+      <main className="min-h-screen bg-slate-50 px-4 py-10">
+        <form className="mx-auto max-w-md space-y-5 rounded-3xl border border-slate-200 bg-white p-7 shadow-xl sm:p-9" onSubmit={login}>
+          <div className="rounded-2xl bg-[#112244] px-5 py-4 text-white">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">Flores El Trigal</p>
+            <p className="mt-1 text-sm font-medium">NEXFLOR ID · Acceso autorizado</p>
+          </div>
+          <div>
+            <h1 className="text-3xl font-semibold text-slate-900">Ingreso de personal</h1>
+            <p className="mt-2 text-sm leading-6 text-slate-600">Inicia sesión con la cuenta de escaneo creada por un administrador.</p>
+          </div>
+          <label className="block text-sm font-medium text-slate-700">
+            Usuario
+            <input className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none transition focus:border-emerald-700 focus:ring-4 focus:ring-emerald-100" autoComplete="username" value={username} onChange={(event) => setUsername(event.target.value)} required />
+          </label>
+          <label className="block text-sm font-medium text-slate-700">
+            Contraseña
+            <input className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none transition focus:border-emerald-700 focus:ring-4 focus:ring-emerald-100" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+          </label>
           {error && <p className="status error" role="alert">{error}</p>}
-          <button className="button" type="submit" disabled={busy}>{busy ? "Verificando…" : "Entrar"}</button>
-          <Link to="/entrar">Volver al taller</Link>
+          <button className="w-full rounded-xl bg-[#112244] px-4 py-3 font-semibold text-white transition hover:bg-[#1c3561] disabled:cursor-not-allowed disabled:opacity-60" type="submit" disabled={busy}>{busy ? "Verificando…" : "Entrar"}</button>
+          <Link className="block text-center text-sm font-medium text-emerald-800 hover:underline" to="/entrar">Volver al taller</Link>
         </form>
       </main>
     );
   }
 
   return (
-    <main className="max-w-3xl mx-auto p-6 text-white">
-      <div className="flex items-center justify-between mb-6">
-        <Link to="/entrar" className="text-emerald-400 hover:text-emerald-300 text-sm">Volver</Link>
+    <main className="min-h-screen bg-slate-950 px-4 py-6 text-slate-100 sm:px-6 sm:py-8">
+      <div className="mx-auto max-w-5xl">
+      <div className="mb-6 flex items-center justify-between">
+        <Link to="/entrar" className="text-sm font-medium text-emerald-300 hover:text-emerald-200">Volver</Link>
         <button type="button" onClick={logout} className="text-sm text-slate-300 hover:text-white">Salir de {session.name || "la cuenta"}</button>
       </div>
-      <section className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6">
+      <section className="space-y-6 rounded-3xl border border-slate-700 bg-slate-900 p-5 shadow-2xl sm:p-8">
         <header className="border-b border-slate-700 pb-5">
           <p className="text-emerald-300 text-xs font-semibold uppercase tracking-wide">Flores El Trigal</p>
           <h1 className="text-2xl font-bold mt-2">NEXFLOR ID</h1>
@@ -367,6 +379,7 @@ export default function Face() {
         {error && <p className="status error" role="alert">{error}</p>}
         {message && <p className="status" role="status">{message}</p>}
       </section>
+      </div>
     </main>
   );
 }

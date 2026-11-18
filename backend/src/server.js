@@ -4,7 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import * as store from "./store.js";
 import { usesMysqlStorage, withDatabaseRequest } from "./store.js";
-import { ensureAdmin, loginAdmin, loginWorker, registerWorker, readSession, verifyAdmin } from "./auth.js";
+import { ensureAdmin, isActiveWorker, loginAdmin, loginWorker, registerWorker, readSession, verifyAdmin } from "./auth.js";
 import * as admin from "./admin.js";
 import * as face from "./faceStore.js";
 import { analyzeFrames, engineStatus, startEngine } from "./faceEngine.js";
@@ -50,7 +50,7 @@ function requireAdmin(req, res, next) {
 function requireWorker(req, res, next) {
   const session = readSession(tokenOf(req));
   const workers = store.readDb().workers || [];
-  if (!session || session.role !== "worker" || !workers.some((worker) => worker.id === session.id)) {
+  if (!session || session.role !== "worker" || !workers.some((worker) => worker.id === session.id && isActiveWorker(worker))) {
     return res.status(401).json({ message: "Entra con una cuenta de trabajador." });
   }
   req.session = session;

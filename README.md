@@ -33,7 +33,7 @@ No se guardan fotos. Una persona nueva queda pendiente hasta que el administrado
 
 ## Nexflor Posture
 
-La sección está en el menú **Nexflor Posture** y, por ahora, ofrece una simulación educativa de alerta sonora. No abre la cámara ni detecta postura real; no debe usarse como monitoreo o diagnóstico médico.
+La sección está en el menú **Nexflor Posture**. Si la persona lo autoriza, abre la cámara y estima en el navegador la inclinación del torso para emitir una alerta didáctica; no sube ni guarda video. La estimación requiere una vista lateral y no sustituye evaluación de salud ocupacional ni constituye diagnóstico.
 
 ## Preparación para producción
 

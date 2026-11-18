@@ -198,14 +198,21 @@ export function savePerson(input, id) {
   return person;
 }
 
-export function removePerson(id) {
-  const db = readDb();
+export function removePersonFromDb(db, id) {
   if (id === "laura") fail("Laura es la cuenta del taller y no se puede borrar.");
   const index = db.team.findIndex((item) => item.id === id);
   if (index < 0) fail("Esa persona no está en el equipo.", 404);
+  const worker = (db.workers || []).find((item) => item.id === id);
+  if (worker) worker.active = false;
   db.team.splice(index, 1);
-  writeDb(db);
   return { ok: true };
+}
+
+export function removePerson(id) {
+  const db = readDb();
+  const result = removePersonFromDb(db, id);
+  writeDb(db);
+  return result;
 }
 
 export function listFiles() {

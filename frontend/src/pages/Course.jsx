@@ -67,14 +67,25 @@ export default function Course() {
 }
 
 function CourseBody({ data, current, setCurrent, busy, note, toast, toggle }) {
-  const lesson = data.lessons[current];
-  const steps = lesson.steps || [];
+  const lesson = data.lessons[current] || null;
+  const steps = lesson?.steps || [];
   const [seen, setSeen] = useState(1);
   const atStart = current === 0;
   const atEnd = current === data.lessons.length - 1;
   const ready = data.progress.percent === 100;
 
-  useEffect(() => setSeen(1), [lesson.id]);
+  useEffect(() => setSeen(1), [lesson?.id]);
+
+  if (!lesson) {
+    return (
+      <section className="page">
+        <p className="eyebrow">{data.category} · {data.level}</p>
+        <h1>{data.title}</h1>
+        <p className="lede">Este curso aún no tiene lecciones publicadas.</p>
+        <Link className="button" to="/cursos">Volver a cursos</Link>
+      </section>
+    );
+  }
 
   return (
     <section className="page">

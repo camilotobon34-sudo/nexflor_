@@ -157,6 +157,10 @@ export function verifyAdmin(token) {
   return readSession(token)?.role === "admin";
 }
 
+export function isActiveWorker(worker) {
+  return Boolean(worker && worker.active !== false);
+}
+
 function samePerson(account, typed) {
   const value = norm(typed);
   if (!value) return false;
@@ -229,7 +233,7 @@ export function registerWorker(name, password, shift) {
   if ((db.admins || []).some((item) => samePerson(item, clean))) {
     fail("Ese nombre es de un administrador. Entra por esa opción.", 400);
   }
-  if (db.workers.some((item) => norm(item.name) === norm(clean))) {
+  if (db.workers.some((item) => item.active !== false && norm(item.name) === norm(clean))) {
     fail("Esa cuenta ya existe. Entra con tu nombre y contraseña.", 400);
   }
   const worker = freshWorker(db, clean, password, shift);
@@ -248,6 +252,7 @@ export function loginWorker(name, password) {
   if (!Array.isArray(db.workers)) db.workers = [];
   const worker = db.workers.find((item) => norm(item.name) === norm(clean));
   if (!worker) rejectUnknown();
+  if (!isActiveWorker(worker)) fail("Esta cuenta está desactivada. Contacta al administrador.", 403);
   if (!checkPassword(password, worker.passwordHash)) rejectLogin();
   attempts.count = 0;
   attempts.until = 0;
