@@ -181,10 +181,9 @@ export async function withDatabaseRequest(_req, res, next) {
       import("./staff.js"),
       import("./faceStore.js"),
     ]);
-    if (seed.affectedRows > 0) resetInitialAdminPasswords();
-
     installResponseCommit(res, connection, context);
     mysqlRequest.run(context, () => {
+      if (seed.affectedRows > 0) resetInitialAdminPasswords();
       ensureAdmin();
       const adminPasswordResetId = String(process.env.ADMIN_PASSWORD_RESET_ID || "").trim();
       if (adminPasswordResetId) resetAdminPasswordOnce("camilo", adminPasswordResetId);
